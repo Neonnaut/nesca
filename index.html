@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en-AU" id="colour-target" class="dark-mode">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <!-- Website information -->
+  <title>NeSCA</title>
+  <meta name="description" content="A tool to apply sound changes.">
+  <meta name="keywords" content="conlangs">
+  <meta name="author" content="Neonnaut">
+  <!-- Scripts and stylings -->
+  <link href="style.css" rel="stylesheet" type="text/css" media="all">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="src/theme-picker.ts"></script>
+
+  <script src="codemirror/cm6.bundle.js"></script>
+
+  <!-- Fonts -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <!-- Icons -->
+  <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
+</head>
+<body>
+  <nav id="myNav">
+    <ol class="breadcrumbs">
+      <li>
+        <a href="/"><img alt="neocities favicon" src="./img/neonnaut.png"></a>
+      </li>
+      <li style="float: right;">
+        <button id="main_menu"><i class="fa fa-bars"></i> Menu</button>
+      </li>
+    </ol>
+  </nav>
+
+  <div id="content">
+    <section id="top">
+      <div>
+        <img src="img/nesca.png" alt="Astronaut" width="100" height="100" style="float: left;">
+        
+        <h1 style="margin: 15px 0 10px 0; padding-top: 10px;">NeSCA</h1>
+
+        <div style="padding-left: 5px;">
+          <b>Version 0.0.0</b><br>
+          <a href="./nesca_docs.html">Read the documentation here</a>
+        </div>
+      </div>
+
+      <br>
+      <p>NeSCA is a sound change applier. It is designed to be an easy to use, and powerful tool for applying sound changes to words. <a href="./nesca_docs.html">Read the documentation here</a>.</p>
+
+        <div class="switch-field">
+          <input type="submit" id="generate-words" value="Apply">
+          <input type="submit" id='output-words-copy' value="Copy">
+          <input type="button" id="lex-clear-editor" value="Clear">
+        </div>
+
+        <table>
+          <tbody><tr>
+          <td>
+            <div>
+              <h5>Input</h5>
+              <textarea id="bases" name="bases" rows="22" cols="39" placeholder="eee"></textarea>
+            </div>
+          </td>
+          <td>
+            <div>
+              <h5>Output</h5>
+              <textarea id="affixes" name="affixes" rows="22" cols="39" placeholder="eee"></textarea>
+            </div>
+          </td>
+          </tr></tbody>
+        </table>
+      
+        <div id='lex-output-message' style="border: 2px solid #000;"></div>
+    
+        <fieldset style="float: left;">
+          <legend>Options</legend>
+  
+          <div>
+            <div style="float:left; display: inline; margin-right: 10px;">
+
+              <input type="radio" id="verbose-mode" name="mode-type">
+              <label for="verbose-mode">Word-list mode</label><br>
+
+              <input type="radio" id="verbose-mode" name="mode-type">
+              <label for="verbose-mode">Old-to-new mode</label><br>
+
+              <input type="radio" id="verbose-mode" name="mode-type">
+              <label for="verbose-mode">Debug mode</label><br>
+  
+              <input type="checkbox" id="editor-wrap-lines">
+              <label for="editor-wrap-lines">Editor wrap lines</label>
+  
+            </div>
+            <div style="float: left; display: inline;">
+  
+              <input type="checkbox" id="sort-words" checked>
+              <label for="sort-words">Sort words</label><br>
+  
+              <input type="checkbox" id="capitalise-words">
+              <label for="capitalise-words">Capitalise words</label><br>
+            </div>
+          </div>
+  
+          <div style="clear: left; padding: 5px 0;">
+            <label for="word-divider">Word divider (newline is default. "\n" makes newlines):</label><br>
+            <input type="text" autocomplete="off" id="word-divider">
+          </div>
+
+          <div style="clear: left; padding: 5px 0;">
+            <label for="word-divider">Syllable divider (Turned OFF is default):</label><br>
+            <input type="text" autocomplete="off" id="word-divider">
+          </div>
+        
+        </fieldset>
+  
+        <fieldset style="float: left;">
+          <legend>File save / load</legend>
+  
+          <label for="file-name">File name:</label><br>
+          <input type="text" autocomplete="off" id="file-name" placeholder="NASC"><br>
+  
+          <input type="submit" id="load-file" value="Load file">
+  
+          <input type="submit" id="save-file" value="Save file"><br>
+
+          <input type="checkbox" id="include-input">
+          <label for="include-input">Include input lexicon in file</label>
+
+        </fieldset>
+        <br style="clear: left;">
+    </section>
+
+    <section>
+      <h2>Definition</h2>
+      <div id="editor"></div>
+      <script src="src/main.ts" type="module"></script>
+    </section>
+
+  </div>
+
+  <footer>
+    <ol class="breadcrumbs">
+      <li>
+        <a href="#myNav">Return to top</a>
+      </li>
+    </ol>
+  </footer>
+  
+</body>
+</html>
