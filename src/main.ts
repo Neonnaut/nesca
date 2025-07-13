@@ -8,11 +8,12 @@ const w = new MyWorker();
 
 function create_file_editor() {
     // Work out content and theme of file editor
-    let content = ''; let theme = 'dark'; let filename = '';
+    let content = ''; let theme = 'dark'; let filename = ''; let input_words = '';
     if (localStorage.hasOwnProperty('nesca')) {
         try {
-            const gotLocalStorage = JSON.parse(localStorage.getItem('nesca') || '[]') as [string, string];
-            content = gotLocalStorage[0]; filename = gotLocalStorage[1];
+            const gotLocalStorage = JSON.parse(localStorage.getItem('nesca') || '[]') as [string, string, string];
+            content = gotLocalStorage[0]; 
+            input_words = gotLocalStorage[1]; filename = gotLocalStorage[2];
         } catch {
             localStorage.removeItem("nesca");
             content = get_example('basic');
@@ -28,6 +29,10 @@ function create_file_editor() {
 
     if (filename) {
         setFilename(filename);
+    }
+
+    if (input_words) {
+        (document.getElementById('nesca-word-input') as HTMLTextAreaElement).value = input_words;
     }
 
     // Create file editor
@@ -59,31 +64,34 @@ $(window).on('load', function () {
     // Generate button
     document.getElementById("apply-button")?.addEventListener("click", function () {
         const generateButton = this as HTMLButtonElement;
+        const outputMessage = document.getElementById('voc-output-message') as HTMLDivElement;
         generateButton.disabled = true;
 
         try {
             w.postMessage({
                 file: editor.state.doc.toString(),
-                num_of_words: (document.getElementById('num-of-words') as HTMLInputElement)?.value || "",
+                input_words: (document.getElementById('nesca-word-input') as HTMLTextAreaElement)?.value || "",
                 mode: (document.querySelector('input[name="mode-type"]:checked') as HTMLInputElement)?.value || "",
-                sort_words: (document.getElementById('sort-words') as HTMLInputElement)?.checked || false,
-                capitalise_words: (document.getElementById('capitalise-words') as HTMLInputElement)?.checked || false,
-                remove_duplicates: (document.getElementById('remove-duplicates') as HTMLInputElement)?.checked || false,
-                force_words: (document.getElementById('force-words') as HTMLInputElement)?.checked || false,
                 word_divider: (document.getElementById('word-divider') as HTMLInputElement)?.value || ""
             });
+            w.onerror = function (e: ErrorEvent) {
+                generateButton.disabled = false;
+                outputMessage.innerHTML = `<p class='error-message'>${e.message}</p>`;
+            };
+
         } catch (e) {
             generateButton.disabled = false;
-            alert(e);
+            const error_message = e instanceof Error ? e.message : String(e);
+            outputMessage.innerHTML = `<p class='error-message'>${error_message}</p>`;
         }
     });
 
     // After generating words 
     w.onmessage = (e: MessageEvent) => {
-        const outputWordsField = document.getElementById('voc-output-words-field') as HTMLInputElement;
+        const outputWordsField = document.getElementById('nesca-word-output') as HTMLInputElement;
         const outputMessage = document.getElementById('voc-output-message') as HTMLDivElement;
         const filenameInput = document.getElementById('file-name') as HTMLInputElement;
-        const generateWordsButton = document.getElementById("generate-words") as HTMLButtonElement;
+        const applyButton = document.getElementById("apply-button") as HTMLButtonElement;
 
         if (outputWordsField) {
             // Transfer words to the output
@@ -113,16 +121,16 @@ $(window).on('load', function () {
         outputMessage.innerHTML = output_message_html;
 
         // Store file contents in local storage to be retrieved on page refresh
-        localStorage.setItem('nesca', JSON.stringify([e.data.file, filename]));
+        localStorage.setItem('nesca', JSON.stringify([e.data.file, e.data.input_words, filename]));
 
-        if (generateWordsButton) {
-            generateWordsButton.disabled = false;
+        if (applyButton) {
+            applyButton.disabled = false;
         }
     };
 
     // Copy results button
-    document.getElementById("output-words-copy")?.addEventListener("click", () => {
-        const outputWordsField = document.getElementById("voc-output-words-field") as HTMLTextAreaElement;
+    document.getElementById("nesca-copy")?.addEventListener("click", () => {
+        const outputWordsField = document.getElementById("nesca-word-output") as HTMLTextAreaElement;
         
         if (outputWordsField && outputWordsField.value !== "") {
             // Select text for deprecated way and aesthetics
@@ -139,9 +147,9 @@ $(window).on('load', function () {
     });
 
     // Clear button
-    const clearButton = document.getElementById("voc-clear-editor") as HTMLButtonElement | null;
+    const clearButton = document.getElementById("nesca-clear-editor") as HTMLButtonElement | null;
     clearButton?.addEventListener("click", () => {
-        const confirmed = window.confirm("Clear EDITOR TEXT and GENERATED WORDS?");
+        const confirmed = window.confirm("Clear ALL FIELDS?");
         if (confirmed) {
             editor.dispatch({
                 changes: {
@@ -163,30 +171,6 @@ $(window).on('load', function () {
         } else {
             cm6.changeEditorLineWrap(editor, false);
         }
-    });
-
-    // Mode buttons
-    document.querySelectorAll("input[name='mode-type']").forEach((element) => {
-        element.addEventListener("click", () => {
-            const wordListMode = document.getElementById("word-list-mode") as HTMLInputElement;
-            const sortWords = document.getElementById("sort-words") as HTMLInputElement;
-            const capitaliseWords = document.getElementById("capitalise-words") as HTMLInputElement;
-            const removeDuplicates = document.getElementById("remove-duplicates") as HTMLInputElement;
-            const wordDivider = document.getElementById("word-divider") as HTMLInputElement;
-            const forceWords = document.getElementById("force-words") as HTMLInputElement;
-
-            if (wordListMode?.checked) {
-                if (sortWords) sortWords.disabled = false;
-                if (capitaliseWords) capitaliseWords.disabled = false;
-                if (removeDuplicates) removeDuplicates.disabled = false;
-                if (wordDivider) wordDivider.disabled = false;
-                if (forceWords) forceWords.disabled = false;
-            } else {
-                [sortWords, capitaliseWords, removeDuplicates, wordDivider, forceWords].forEach(element => {
-                    if (element) element.disabled = true;
-                });
-            }
-        });
     });
 
     // Load file button
@@ -235,7 +219,7 @@ $(window).on('load', function () {
         link.href = URL.createObjectURL(blob);
 
         const rawName = fileNameInput?.value || "";
-        const downloadName = rawName === "" ? "NeSCA.txt" : `${rawName}.txt`;
+        const downloadName = rawName === "" ? "nesca.txt" : `${rawName}.txt`;
 
         link.download = downloadName;
         link.click();
@@ -246,7 +230,7 @@ $(window).on('load', function () {
     });
 
     // Examples buttons
-    document.querySelectorAll(".voc-example").forEach((button) => {
+    document.querySelectorAll(".nesca-example").forEach((button) => {
         button.addEventListener("click", () => {
             const choice = (button as HTMLElement).getAttribute("value") || '?';
             const text = get_example(choice);
@@ -269,7 +253,7 @@ $(window).on('load', function () {
 
     // Show keyboard toggle
     document.getElementById("show-keyboard")?.addEventListener("click", () => {
-        const keyboardTable = document.getElementById("voc-keyboard-table") as HTMLDivElement;
+        const keyboardTable = document.getElementById("nesca-keyboard-table") as HTMLDivElement;
         const checkbox = document.getElementById('show-keyboard') as HTMLInputElement;
         
         if (keyboardTable && checkbox) {
@@ -294,8 +278,9 @@ $(window).on('load', function () {
 });
 
 function clearResults(): void {
-    (document.getElementById('voc-output-message') as HTMLInputElement).value = "";
-    (document.getElementById('voc-output-words-field') as HTMLInputElement).value = "";
+    (document.getElementById('nesca-output-message') as HTMLInputElement).value = "";
+    (document.getElementById('nesca-word-input') as HTMLInputElement).value = "";
+    (document.getElementById('nesca-word-output') as HTMLInputElement).value = "";
 }
 
 function setFilename(filename: string): void {

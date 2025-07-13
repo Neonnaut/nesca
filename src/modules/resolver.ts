@@ -1,111 +1,61 @@
 import type Escape_Mapper from './escape_mapper';
 import Logger from './logger';
-import InterBuilder from './inter_builder';
 
-import { getCatSeg, GetTransform, makePercentage, extract_complex_value_and_weight, resolve_nested_categories,
-    valid_words_brackets, valid_category_brackets, valid_weights, parse_distribution
+import { getCatSeg, GetTransform, makePercentage, resolve_nested_categories,
+    valid_category_brackets, 
+    valid_category_weights
  } from './utilities'
+
+type DiachronicRule = {
+  target: string[];
+  result: string[];
+  condition: string[];
+  exception: string[];
+};
 
 class Resolver {
     public logger: Logger;
     private escape_mapper: Escape_Mapper;
+    public mode: string;
 
-    public num_of_words: number;
-    public debug: boolean;
-    public paragrapha: boolean;
-    public remove_duplicates: boolean;
-    public force_word_limit: boolean;
-    public sort_words: boolean;
-    public capitalise_words: boolean;
     public word_divider: string;
 
-    public category_distribution: string;
     private category_strings: Map<string, string>;
     public categories: Map<string, { graphemes:string[], weights:number[]} >;
     
-    public segments: Map<string, string>;
-    public optionals_weight: number;
-    public wordshape_distribution: string;
-    private wordshape_string: string;
-    public wordshapes: { items:string[], weights:number[]};
-    
-    public transforms: { target:string[], result:string[]}[];
+    public transforms: { target:string[], result:string[], line_num:string}[];
     public graphemes: string[];
-    public alphabet: string[];
-    public invisible: string[];
 
     private file_line_num = 0;
+
+    public input_words: string[];
 
     constructor(
         logger: Logger,
         escape_mapper: Escape_Mapper,
-        num_of_words_string: string,
-
         mode: string,
-        sort_words: boolean,
-        capitalise_words: boolean,
-        remove_duplicates: boolean,
-        force_word_limit: boolean,
         word_divider: string
     ) {
         this.logger = logger;
         this.escape_mapper = escape_mapper;
 
-        if (num_of_words_string == '') {
-            num_of_words_string = '100';
+        this.mode = mode;
+        if (mode !== 'debug' && mode !== 'old-to-new') {
+            this.mode = 'word-list';
         }
-        let num_of_words: number = Number(num_of_words_string);
-        if (isNaN(num_of_words)) {
-            this.logger.warn('Number of words was not a number. Genearating 100 words instead');
-            num_of_words = 100;
-        } else if (!Number.isInteger(num_of_words)) {
-            this.logger.warn('Number of words was rounded to the nearest whole number');
-            num_of_words = Math.ceil(num_of_words);
-        }
-        if ((num_of_words > 1_000_000) || (num_of_words < 1)) {
-            this.logger.warn('Number of words was not between 1 and 1,000,000. Genearating 100 words instead');
-            num_of_words = 100;
-        }
-        this.num_of_words = num_of_words;
 
-        this.debug = (mode === 'debug');
-        this.paragrapha = (mode === 'paragraph');
-        this.sort_words = sort_words;
-        this.capitalise_words = capitalise_words;
-        this.remove_duplicates = remove_duplicates;
-        this.force_word_limit = force_word_limit;
-        this.word_divider = word_divider === "" ? ' ' : word_divider;
+        this.word_divider = word_divider === "" ? '\n' : word_divider;
         this.word_divider = this.word_divider.replace(new RegExp('\\\\n', 'g'), '\n');
-
-        if (this.paragrapha) {
-            this.sort_words = false;
-            this.capitalise_words = false;
-            this.remove_duplicates = false;
-            this.force_word_limit = false;
-            this.word_divider = ' ';
-        } else if (this.debug) {
-            this.sort_words = false;
-            this.capitalise_words = false;
-            this.remove_duplicates = false;
-            this.force_word_limit = false;
-            this.word_divider = '\n';
-        }
         
-        this.category_distribution = "flat";
         this.category_strings = new Map;
         this.categories = new Map;
-        this.optionals_weight = 10;
-        this.segments = new Map;
-        this.wordshape_distribution = "flat";
-        this.alphabet = [];
-        this.invisible = [];
-        this.wordshape_string = ""
-        this.wordshapes = { items: [], weights: [] };
+
         this.graphemes = [];
         this.transforms = [];
+
+        this.input_words = [];
     }
 
-    
     parse_file(file: string) {
 
         let transform_mode = false;
@@ -143,66 +93,12 @@ class Resolver {
                     continue;
                 }
 
-                this.add_transform(target, result);
+                this.add_transform(target, result, `${this.file_line_num + 1}`);
                 continue;
             }
 
             if (line.startsWith("BEGIN transform:")) {
                 transform_mode = true;
-
-            } else if (line.startsWith("category-distribution:")) {
-                line_value = line.substring(22).trim().toLowerCase();
-
-                this.category_distribution = parse_distribution(line_value);
-
-            } else if (line.startsWith("wordshape-distribution:")) {
-                line_value = line.substring(23).trim().toLowerCase();
-
-                this.wordshape_distribution = parse_distribution(line_value);
-
-            } else if (line.startsWith("optionals-weight:")) {
-                line_value = line.substring(17).replace(/%/g, "").trim();
-
-                let optionals_weight = makePercentage(line_value);
-                if (optionals_weight == null) {
-                    this.logger.warn(`Invalid optionals-weight at ${this.file_line_num + 1} -- expected a number between 1 and 100`);
-                    continue;
-                }
-                this.optionals_weight = optionals_weight;
-
-            } else if (line.startsWith("alphabet:")) {
-                line_value = line.substring(9).trim();
-                line_value = this.escape_mapper.restorePreserveEscapedChars(line_value);
-
-                let alphabet = line_value.split(/[,\s]+/).filter(Boolean);
-
-                if (alphabet.length == 0){
-                    this.logger.warn(`\`alphabet\` was introduced but there were no graphemes listed at ${this.file_line_num + 1} -- expected a list of graphemes`);
-                }
-                this.alphabet = alphabet;
-
-            } else if (line.startsWith("invisible:")) {
-                line_value = line.substring(10).trim();
-                line_value = this.escape_mapper.restorePreserveEscapedChars(line_value);
-
-                let invisible = line_value.split(/[,\s]+/).filter(Boolean);
-
-                if (invisible.length == 0){
-                    this.logger.warn(`\`invisible\` was introduced but there were no graphemes listed at ${this.file_line_num + 1} -- expected a list of graphemes`);
-                }
-                this.invisible = invisible;
-
-            } else if (line.startsWith("alphabet-and-graphs:")) {
-                line_value = line.substring(20).trim();
-                line_value = this.escape_mapper.restorePreserveEscapedChars(line_value);
-
-                let a_g = line_value.split(/[,\s]+/).filter(Boolean);
-
-                if (a_g.length == 0){
-                    this.logger.warn(`\`alphabet-and-graphs\` was introduced but there were no graphemes listed at ${this.file_line_num + 1} -- expected a list of graphemes`);
-                }
-                this.graphemes = a_g;
-                this.alphabet = a_g;
 
             } else if (line.startsWith("graphemes:")) {
                 line_value = line.substring(10).trim();
@@ -214,15 +110,7 @@ class Resolver {
                 }
                 this.graphemes = graphemes;
 
-            } else if (line.startsWith("words:")) {
-                line_value = line.substring(6).trim();
-                line_value = this.escape_mapper.escapeBackslashPairs(line_value);
-                
-                if (line_value != "") {
-                    this.wordshape_string = line_value;
-                }
-
-            } else { // It's a category or segment
+            } else { // It's a category
                 line_value = line;
                 line_value = this.escape_mapper.escapeBackslashPairs(line_value);
 
@@ -233,8 +121,7 @@ class Resolver {
                     continue;
                 }
                 if (hasDollarSign) {
-                    // SEGMENTS !!!
-                    this.add_segment(myName, field);
+                   
                 } else {
                     // CATEGORIES !!!
                     this.add_category(myName, field);
@@ -246,60 +133,9 @@ class Resolver {
     add_category(name:string, field:string) {
         this.category_strings.set(name, field);
     }
-    add_segment(name:string, field:string) {
-        this.segments.set(name, field);
-    }
 
-    set_wordshapes(inter_builder: InterBuilder) {
-        let result = [];
-        let buffer = "";
-        let insideBrackets = 0;
-
-        if (this.wordshape_string.length == 0){
-            throw new Error(`No word-shapes to choose from -- expected \`words: wordshape1 wordshape2 ...\``);
-        }
-
-        this.wordshape_string = inter_builder.processString(this.wordshape_string);
-
-        if (!valid_words_brackets(this.wordshape_string)) {
-            throw new Error("A word-shape had missmatched brackets");
-        }
-        if (!valid_weights(this.wordshape_string)) {
-            throw new Error("A word-shape had invalid weights -- expected weights to follow an item and look like `:NUMBER` followed by either `,` or ` `");
-        }
-
-        for (let i = 0; i < this.wordshape_string.length; i++) {
-            const char = this.wordshape_string[i];
-
-            if (char === '[' || char === '(') {
-                insideBrackets++;
-            } else if (char === ']' || char === ')') {
-                insideBrackets--;
-            }
-
-            if ((char === ' ' || char === ',') && insideBrackets === 0) {
-                if (buffer.length > 0) {
-                    result.push(buffer);
-                    buffer = "";
-                }
-            } else {
-                buffer += char;
-            }
-        }
-
-        if (buffer.length > 0) {
-            result.push(buffer);
-        }
-
-        let [resultStr, resultNum] = extract_complex_value_and_weight(result, this.wordshape_distribution);
-        for (let i = 0; i < resultStr.length; i++) {
-            this.wordshapes.items.push(resultStr[i]);
-            this.wordshapes.weights.push(resultNum[i]); ///
-        } 
-    }
-
-    add_transform(target:string[], result:string[]) {
-        this.transforms.push( { target:target, result:result } );
+    add_transform(target:string[], result:string[], line_num:string) {
+        this.transforms.push( { target:target, result:result, line_num:line_num} );
     }
 
     expand_categories() {
@@ -307,31 +143,44 @@ class Resolver {
             if (!valid_category_brackets(value)) {
                 throw new Error("A category had missmatched brackets");
             }
-            if (!valid_weights(value)) {
-                throw new Error("A category had invalid weights -- expected weights to follow an item and look like `:NUMBER` followed by either `,` or ` `");
+            if (!valid_category_weights(value)) {
+                throw new Error("A category had invalid weights -- expected weights to follow an item and look like `*NUMBER` followed by either `,`, a bracket, or ` `");
             }
             this.category_strings.set( key, this.recursiveExpansion(value, this.category_strings, true) );
         }
 
-
-
         for (const [key, value] of this.category_strings) {
-            const newCategoryField: { graphemes:string[], weights:number[]} = resolve_nested_categories(value, this.category_distribution);
+            const newCategoryField: { graphemes:string[], weights:number[]} = resolve_nested_categories(value, 'flat');
             this.categories.set(key, newCategoryField);
         }
     }
 
-    expand_wordshape_segments() {
-        this.wordshape_string = this.recursiveExpansion(this.wordshape_string, this.segments);
 
-        // Remove dud segments
-        this.wordshape_string = this.wordshape_string.replace(/\$[A-Z]/g, '❓');
-    }
 
-    expand_segments() {
-        for (const [key, value] of this.segments) {
-            this.segments.set(key, this.recursiveExpansion(value, this.segments, false));
+    parseDiachronicRule(ruleStr: string): DiachronicRule {
+        const [leftSide, ...rhsParts] = ruleStr.split('/').map(s => s.trim());
+        const [targetRaw, resultRaw] = leftSide.split('->').map(s => s.trim());
+
+        const target = targetRaw.split(',').map(s => s.trim());
+        const result = resultRaw.split(/\s+/).map(s => s.trim());
+
+        const condition: string[] = [];
+        const exception: string[] = [];
+
+        for (const part of rhsParts) {
+            const subParts = part.split('!').map(s => s.trim());
+            if (subParts[0]) condition.push(subParts[0]);
+            exception.push(...subParts.slice(1).filter(Boolean));
         }
+
+        // Handle case with exceptions but no '/'
+        if (rhsParts.length === 0 && resultRaw.includes('!')) {
+            const [rPart, ...rawExceptions] = resultRaw.split('!').map(s => s.trim());
+            result.length = 0;
+            result.push(...rPart.split(/\s+/).filter(Boolean));
+            exception.push(...rawExceptions.filter(Boolean));
+        }
+        return { target, result, condition, exception };
     }
 
 
@@ -411,7 +260,7 @@ class Resolver {
                 }
             }
         }
-        this.add_transform(concurrent_target, concurrent_result);
+        this.add_transform(concurrent_target, concurrent_result, `${this.file_line_num + 1}`);
     }
 
 
@@ -427,16 +276,6 @@ class Resolver {
             categories.push(`  ${key} = ${category_field}`);
         }
 
-        let segments = [];
-        for (const [key, value] of this.segments) {
-            segments.push(`  ${key} = ${value}`);
-        }
-
-        let wordshapes = [];
-        for (let i = 0; i < this.wordshapes.items.length; i++) {
-            wordshapes.push(`\`${this.wordshapes.items[i]}\`:${this.wordshapes.weights[i]}`);
-        }
-
         let transforms = [];
         for (let i = 0; i < this.transforms.length; i++) {
             transforms.push(`  ${this.transforms[i].target.join(", ")} → ${this.transforms[i].result.join(", ")}`);
@@ -444,29 +283,13 @@ class Resolver {
 
         let info:string =
             `~ OPTIONS ~\n` +
-            `Num of words:      ` + this.num_of_words + 
-            `\nDebug:             ` + this.debug + 
-            `\nParagrapha:        ` + this.paragrapha +
-            `\nRemove duplicates: ` + this.remove_duplicates +
-            `\nForce word limit:  ` + this.force_word_limit +
-            `\nSort words:        ` + this.sort_words +
-            `\nCapitalise words:  ` + this.capitalise_words +
-            `\nWord divider:      "` + this.word_divider + `"` +
+            `Mode: ` + this.mode + 
+            `\nWord divider: "` + this.word_divider + `"` +
+
             `\n\n~ FILE ~` +
-
-            `\nCategory-distribution:  ` + this.category_distribution +
             `\nCategories {\n` + categories.join('\n') + `\n}` +
-
-            `\nSegments {\n` + segments.join('\n') + `\n}` +
-            `\nOptionals-weight:       ` + this.optionals_weight +
-
-            `\nWordshape-distribution: ` + this.wordshape_distribution +
-            `\nWordshapes:             ` + wordshapes.join(', ') + `\n}` +
-
             `\nTransforms {\n` + transforms.join('\n') + `\n}` +
-            `\nGraphemes:              ` + this.graphemes.join(', ') +
-            `\nAlphabet:               ` + this.alphabet.join(', ') +
-            `\nInvisible:             ` + this.invisible.join(', ');
+            `\nGraphemes: ` + this.graphemes.join(', ');
         info = this.escape_mapper.restorePreserveEscapedChars(info);
 
         this.logger.silent_info(info);

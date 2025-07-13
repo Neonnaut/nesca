@@ -48,32 +48,32 @@
       </div>
 
       <br>
-      <p>NeSCA is a sound change applier. It is designed to be an easy to use, and powerful tool for applying sound changes to words. <a href="./nesca_docs.html">Read the documentation here</a>.</p>
-
-        <div class="switch-field">
-          <input type="submit" id="generate-words" value="Apply">
-          <input type="submit" id='output-words-copy' value="Copy">
-          <input type="button" id="lex-clear-editor" value="Clear">
-        </div>
+      <p>NeSCA is a sound change applier. <a href="./nesca_docs.html">Read the documentation here</a>.</p>
 
         <table>
           <tbody><tr>
           <td>
             <div>
               <h5>Input</h5>
-              <textarea id="bases" name="bases" rows="22" cols="39" placeholder="eee"></textarea>
+              <textarea id="nesca-word-input" spellcheck="false" autocomplete="off" rows="22" cols="39" placeholder="eee"></textarea>
             </div>
           </td>
           <td>
             <div>
               <h5>Output</h5>
-              <textarea id="affixes" name="affixes" rows="22" cols="39" placeholder="eee"></textarea>
+              <textarea id="nesca-word-output" spellcheck="false" autocomplete="off" rows="22" cols="39" placeholder="eee"></textarea>
             </div>
           </td>
           </tr></tbody>
         </table>
+
+        <div class="switch-field">
+          <input type="submit" id="apply-button" value="Apply">
+          <input type="submit" id='nesca-copy' value="Copy">
+          <input type="button" id="nesca-clear-editor" value="Clear">
+        </div>
       
-        <div id='lex-output-message' style="border: 2px solid #000;"></div>
+        <div id='voc-output-message' style="border: 2px solid #000;"></div>
     
         <fieldset style="float: left;">
           <legend>Options</legend>
@@ -81,36 +81,28 @@
           <div>
             <div style="float:left; display: inline; margin-right: 10px;">
 
-              <input type="radio" id="verbose-mode" name="mode-type">
-              <label for="verbose-mode">Word-list mode</label><br>
+              <input type="radio" id="word-list-mode" name="mode-type" value="word-list" checked>
+              <label for="word-list-mode">Word-list mode</label><br>
 
-              <input type="radio" id="verbose-mode" name="mode-type">
-              <label for="verbose-mode">Old-to-new mode</label><br>
+              <input type="radio" id="old-to-new-mode" name="mode-type" value="old-to-new">
+              <label for="old-to-new-mode">Old-to-new mode</label><br>
 
-              <input type="radio" id="verbose-mode" name="mode-type">
-              <label for="verbose-mode">Debug mode</label><br>
-  
-              <input type="checkbox" id="editor-wrap-lines">
-              <label for="editor-wrap-lines">Editor wrap lines</label>
+              <input type="radio" id="debug-mode" name="mode-type" value="debug">
+              <label for="debug-mode">Debug mode</label><br>
   
             </div>
             <div style="float: left; display: inline;">
   
-              <input type="checkbox" id="sort-words" checked>
-              <label for="sort-words">Sort words</label><br>
-  
-              <input type="checkbox" id="capitalise-words">
-              <label for="capitalise-words">Capitalise words</label><br>
+              <input type="checkbox" id="show-keyboard">
+              <label for="show-keyboard">Show keyboard</label><br>
+
+              <input type="checkbox" id="editor-wrap-lines">
+              <label for="editor-wrap-lines">Editor wrap lines</label>
             </div>
           </div>
   
           <div style="clear: left; padding: 5px 0;">
-            <label for="word-divider">Word divider (newline is default. "\n" makes newlines):</label><br>
-            <input type="text" autocomplete="off" id="word-divider">
-          </div>
-
-          <div style="clear: left; padding: 5px 0;">
-            <label for="word-divider">Syllable divider (Turned OFF is default):</label><br>
+            <label for="word-divider">Word divider (newline is default. "\n" for newlines):</label><br>
             <input type="text" autocomplete="off" id="word-divider">
           </div>
         
@@ -118,16 +110,19 @@
   
         <fieldset style="float: left;">
           <legend>File save / load</legend>
-  
+          <input type="checkbox" id="include-input">
+          <label for="include-input">Include input lexicon in file</label><br>
           <label for="file-name">File name:</label><br>
-          <input type="text" autocomplete="off" id="file-name" placeholder="NASC"><br>
+          <input type="text" autocomplete="off" id="file-name" placeholder="Nesca"><br>
   
           <input type="submit" id="load-file" value="Load file">
-  
           <input type="submit" id="save-file" value="Save file"><br>
 
-          <input type="checkbox" id="include-input">
-          <label for="include-input">Include input lexicon in file</label>
+          <details class="dropdown-group">
+            <summary class="dropdown-btn">Examples</summary>
+            <a class="nesca-example" value="basic">Default</a>
+            <a class="nesca-example" value="tonal">Choice 2</a>
+          </details>
 
         </fieldset>
         <br style="clear: left;">
@@ -137,6 +132,38 @@
       <h2>Definition</h2>
       <div id="editor"></div>
       <script src="src/main.ts" type="module"></script>
+    </section>
+
+    <section id="nesca-keyboard-table" style="display: none;">
+      <h2>Keyboard</h2>
+      <table class="btns ipa-table" style="touch-action:pan-x pan-y;height:100%;">
+          <tr>
+            <td><button class="vowel ipa-button" title="near-open front unrounded vowel" value="&#x00E6;">&#x00E6;</button></td>
+            <td><button class="vowel ipa-button" title="near-open central (unrounded) vowel" value="&#x0250;">&#x0250;</button></td>
+            <td><button class="vowel ipa-button" title="open-mid back unrounded vowel" value="&#x028C;">&#x028C;</button></td>
+            <td><button class="vowel ipa-button" title="open back unrounded vowel" value="&#x0251;">&#x0251;</button></td>
+            <td><button class="vowel ipa-button" title="open back rounded vowel" value="&#x0252;">&#x0252;</button></td>
+            <td><button class="vowelX ipa-button" title="a with acute" value="&#x00E1;">&#x00E1;</button></td>
+            <td><button class="vowelX ipa-button" title="a with grave" value="&#x00E0;">&#x00E0;</button></td>
+            <td><button class="vowelX ipa-button" title="a with macron" value="&#x0101;">&#x0101;</button></td>
+            <td><button class="vowelX ipa-button" title="a with tilde" value="&#x00E3;">&#x00E3;</button></td>
+            <td><button class="vowelX ipa-button" title="a with ogonek" value="&#x0105;">&#x0105;</button></td>
+            <td><button class="vowelX ipa-button" title="a with underdot" value="&#x1EA1;">&#x1EA1;</button></td>
+            <td><button class="vowelX ipa-button" title="a with diaeresis" value="&#x00E4;">&#x00E4;</button></td>
+            <td><button class="vowelX ipa-button" title="a with ring" value="&#x00E5;">&#x00E5;</button></td>
+            <td><button class="cons ipa-button" title="voiced bilabial fricative" value="&#x03B2;">&#x03B2;</button></td>
+            <td><button class="cons ipa-button" title="voiced bilabial implosive" value="&#x0253;">&#x0253;</button></td>
+            <td><button class="cons ipa-button" title="voiceless palatal fricative" value="&#x00E7;">&#x00E7;</button></td>
+            <td><button class="cons ipa-button" title="voiceless alveolo-palatal fricative" value="&#x0255;">&#x0255;</button></td>
+            <td><button class="consN ipa-button" title="c with acute" value="&#x0107;">&#x0107;</button></td>
+            <td><button class="consN ipa-button" title="c with caron" value="&#x010D;">&#x010D;</button></td>
+            <td><button class="cons ipa-button" title="voiced dental fricative" value="&#x00F0;">&#x00F0;</button></td>
+            <td><button class="cons ipa-button" title="voiced retroflex plosive" value="&#x0256;">&#x0256;</button></td>
+            <td><button class="cons ipa-button" title="voiced alveolar implosive" value="&#x0257;">&#x0257;</button></td>
+            <td><button class="cons ipa-button" title="voiced retroflex implosive" value="&#x1D91;">&#x1D91;</button></td>
+            <td><button class="consN ipa-button" title="d with underdot" value="&#x1E0D;">&#x1E0D;</button></td>
+          </tr>
+      </table>
     </section>
 
   </div>
