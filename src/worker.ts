@@ -13,9 +13,10 @@ onmessage = function (event) {
         file: event.data.file,
         input_words: event.data.input_words,
         
-        error_message: nesca.errors,
-        warning_message: nesca.warnings,
-        info_message: nesca.infos
+        error_messages: nesca.errors,
+        warning_messages: nesca.warnings,
+        info_messages: nesca.infos,
+        diagnostic_messages: nesca.diagnostics
     });
 }
 

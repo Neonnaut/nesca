@@ -49,157 +49,160 @@ class Transformer {
     }
 
 
-applyTransform(
-    word: Word,
-    tokens: string[],
-    transform: { target: string[]; result: string[], line_num:string}
-): string[] {
-    function spanToLength(subTokens: string[], targetLen: number): number {
-        let count = 0;
-        for (let i = 0; i < subTokens.length; i++) {
-            count += subTokens[i].length;
-            if (count >= targetLen) return i + 1;
+    applyTransform(
+        word: Word,
+        tokens: string[],
+        transform: { 
+            target: string[]; result: string[],
+            conditions: { before: string; after: string }[];
+            exceptions: { before: string; after: string }[];
+            line_num:string
         }
-        return subTokens.length;
-    }
+    ): string[] {
+        function spanToLength(subTokens: string[], targetLen: number): number {
+            let count = 0;
+            for (let i = 0; i < subTokens.length; i++) {
+                count += subTokens[i].length;
+                if (count >= targetLen) return i + 1;
+            }
+            return subTokens.length;
+        }
 
-    const { target, result } = transform;
+        const { target, result } = transform;
 
-    if (target.length !== result.length) {
-        throw new Error("Mismatched target/result concurrent set lengths in a transform");
-    }
+        if (target.length !== result.length) {
+            throw new Error("Mismatched target/result concurrent set lengths in a transform");
+        }
 
-    const replacements: { index: number; length: number; replacement: string }[] = [];
+        const replacements: { index: number; length: number; replacement: string }[] = [];
 
-    for (let i = 0; i < target.length; i++) {
-        let rawSearch = target[i];
-        const isDelete = result[i] === "^";
-        let replacement = isDelete ? "" : result[i];
+        for (let i = 0; i < target.length; i++) {
+            let rawSearch = target[i];
+            const isDelete = result[i] === "^";
+            let replacement = isDelete ? "" : result[i];
 
-        if (replacement === "^REJECT") {
+            if (replacement === "^REJECT") {
+                for (let j = 0; j < tokens.length; j++) {
+                    const subTokens = tokens.slice(j);
+                    const span = spanToLength(subTokens, rawSearch.length);
+                    const window = subTokens.slice(0, span).join("");
+
+                    if (window === rawSearch) {
+                        word.rejected = true;
+                        word.record_transformation(`${rawSearch} → ^REJECT`, transform.line_num, "❌");
+                        return tokens;
+                    }
+                }
+            }
+
+
+            // 🔒 Full-string match: #...#
+            if (rawSearch.startsWith("#") && rawSearch.endsWith("#") && !rawSearch.endsWith("\\#") && rawSearch.length > 2) {
+                rawSearch = rawSearch.replace(/\\/g, "");
+                replacement = replacement.replace(/\\/g, "");
+                const needle = rawSearch.slice(1, -1);
+                const joined = tokens.join("");
+                if (joined === needle) {
+                    replacements.push({ index: 0, length: tokens.length, replacement });
+                }
+                continue;
+            }
+
+            // ⛳ Prefix match: #abc
+            if (rawSearch.startsWith("#")) {
+                rawSearch = rawSearch.replace(/\\/g, "");
+                replacement = replacement.replace(/\\/g, "");
+                const needle = rawSearch.slice(1);
+                const span = spanToLength(tokens, needle.length);
+                const head = tokens.slice(0, span).join("");
+                if (head === needle) {
+                    replacements.push({ index: 0, length: span, replacement });
+                }
+                continue;
+            }
+
+            // 🏁 Suffix match: abc#
+            if ( rawSearch.endsWith("#")  && !rawSearch.endsWith("\\#") ) {
+                rawSearch = rawSearch.replace(/\\/g, "");
+                replacement = replacement.replace(/\\/g, "");
+                const needle = rawSearch.slice(0, -1);
+                const reversed = [...tokens].reverse();
+                const span = spanToLength(reversed, needle.length);
+                const tail = reversed.slice(0, span).reverse().join("");
+                if (tail === needle) {
+                    replacements.push({
+                        index: tokens.length - span,
+                        length: span,
+                        replacement,
+                    });
+                }
+                continue;
+            }
+
+            rawSearch = rawSearch.replace(/\\/g, "");
+            replacement = replacement.replace(/\\/g, "");
+
+            // 🔍 Anywhere match
             for (let j = 0; j < tokens.length; j++) {
                 const subTokens = tokens.slice(j);
                 const span = spanToLength(subTokens, rawSearch.length);
                 const window = subTokens.slice(0, span).join("");
-
                 if (window === rawSearch) {
-                    word.rejected = true;
-                    word.record_transformation(`${rawSearch} → ^REJECT`, transform.line_num, "❌");
-                    return tokens;
+                    replacements.push({ index: j, length: span, replacement });
                 }
             }
         }
 
+        // ✂️ Apply replacements non-destructively
+        replacements.sort((a, b) => a.index - b.index);
+        const blocked = new Set<number>();
+        const resultTokens: string[] = [];
 
-        // 🔒 Full-string match: #...#
-        if (rawSearch.startsWith("#") && rawSearch.endsWith("#") && !rawSearch.endsWith("\\#") && rawSearch.length > 2) {
-            rawSearch = rawSearch.replace(/\\/g, "");
-            replacement = replacement.replace(/\\/g, "");
-            const needle = rawSearch.slice(1, -1);
-            const joined = tokens.join("");
-            if (joined === needle) {
-                replacements.push({ index: 0, length: tokens.length, replacement });
-            }
-            continue;
-        }
-
-        // ⛳ Prefix match: #abc
-        if (rawSearch.startsWith("#")) {
-            rawSearch = rawSearch.replace(/\\/g, "");
-            replacement = replacement.replace(/\\/g, "");
-            const needle = rawSearch.slice(1);
-            const span = spanToLength(tokens, needle.length);
-            const head = tokens.slice(0, span).join("");
-            if (head === needle) {
-                replacements.push({ index: 0, length: span, replacement });
-            }
-            continue;
-        }
-
-        // 🏁 Suffix match: abc#
-        if ( rawSearch.endsWith("#")  && !rawSearch.endsWith("\\#") ) {
-            rawSearch = rawSearch.replace(/\\/g, "");
-            replacement = replacement.replace(/\\/g, "");
-            const needle = rawSearch.slice(0, -1);
-            const reversed = [...tokens].reverse();
-            const span = spanToLength(reversed, needle.length);
-            const tail = reversed.slice(0, span).reverse().join("");
-            if (tail === needle) {
-                replacements.push({
-                    index: tokens.length - span,
-                    length: span,
-                    replacement,
-                });
-            }
-            continue;
-        }
-
-        rawSearch = rawSearch.replace(/\\/g, "");
-        replacement = replacement.replace(/\\/g, "");
-
-        // 🔍 Anywhere match
-        for (let j = 0; j < tokens.length; j++) {
-            const subTokens = tokens.slice(j);
-            const span = spanToLength(subTokens, rawSearch.length);
-            const window = subTokens.slice(0, span).join("");
-            if (window === rawSearch) {
-                replacements.push({ index: j, length: span, replacement });
+        let i = 0;
+        while (i < tokens.length) {
+            const match = replacements.find(
+                r =>
+                    r.index === i &&
+                    ![...Array(r.length).keys()].some(k => blocked.has(i + k))
+            );
+            if (match) {
+                if (match.replacement !== "") {
+                    resultTokens.push(match.replacement);
+                }
+                for (let k = 0; k < match.length; k++) {
+                    blocked.add(i + k);
+                }
+                i += match.length;
+            } else {
+                resultTokens.push(tokens[i]);
+                i++;
             }
         }
-    }
 
-    // ✂️ Apply replacements non-destructively
-    replacements.sort((a, b) => a.index - b.index);
-    const blocked = new Set<number>();
-    const resultTokens: string[] = [];
+        const normalized = this.graphemosis(resultTokens.join(""));
 
-    let i = 0;
-    while (i < tokens.length) {
-        const match = replacements.find(
-            r =>
-                r.index === i &&
-                ![...Array(r.length).keys()].some(k => blocked.has(i + k))
+        const appliedSet = new Set(
+            replacements.map(r => r.replacement === "" ? "^" : r.replacement)
         );
-        if (match) {
-            if (match.replacement !== "") {
-                resultTokens.push(match.replacement);
+        const matchedTargets: string[] = [];
+        const matchedResults: string[] = [];
+
+        for (let i = 0; i < transform.target.length; i++) {
+            const expected = transform.result[i] === "^" ? "" : transform.result[i];
+            if (appliedSet.has(expected)) {
+            matchedTargets.push(transform.target[i]);
+            matchedResults.push(transform.result[i]);
             }
-            for (let k = 0; k < match.length; k++) {
-                blocked.add(i + k);
-            }
-            i += match.length;
-        } else {
-            resultTokens.push(tokens[i]);
-            i++;
         }
+
+        if (matchedTargets.length > 0) {
+            word.record_transformation(
+            `${matchedTargets.join(", ")} → ${matchedResults.join(", ")}`, transform.line_num,
+            normalized.join(" ")
+            );
+        }
+        return normalized;
     }
-
-    const normalized = this.graphemosis(resultTokens.join(""));
-
-      const appliedSet = new Set(
-    replacements.map(r => r.replacement === "" ? "^" : r.replacement)
-  );
-  const matchedTargets: string[] = [];
-  const matchedResults: string[] = [];
-
-  for (let i = 0; i < transform.target.length; i++) {
-    const expected = transform.result[i] === "^" ? "" : transform.result[i];
-    if (appliedSet.has(expected)) {
-      matchedTargets.push(transform.target[i]);
-      matchedResults.push(transform.result[i]);
-    }
-  }
-
-  if (matchedTargets.length > 0) {
-    word.record_transformation(
-      `${matchedTargets.join(", ")} → ${matchedResults.join(", ")}`, transform.line_num,
-      normalized.join(" ")
-    );
-  }
-
-
-    return normalized;
-}
 
     do_transforms(
         word: Word,

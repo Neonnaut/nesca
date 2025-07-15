@@ -10,16 +10,20 @@ function gen_words(
     input_words: string,
     mode: string = 'word-list',
     word_divider: string = "\n"
-): { text:string, errors:string[], warnings:string[], infos:string[] } {
+): { text:string, errors:string[], warnings:string[], infos:string[], diagnostics:string[] } {
     const logger = new Logger();
     let text = 'wiggy wiggy wiggly words';
     const build_start = Date.now();
 
     try {
-        const escape_mapper = new Escape_Mapper(); // Initialize Escape_Mapper to ensure it's ready for use
+        const escape_mapper = new Escape_Mapper();
 
         const r = new Resolver( logger, escape_mapper, mode, word_divider );
         r.parse_file(file);
+
+        r.expand_categories();
+
+        r.resolve_transforms();
         r.create_record();
 
         const b = new Word_Bank(logger, input_words, r.word_divider, r.mode);
@@ -37,7 +41,8 @@ function gen_words(
         logger.error(typeof e === "string" ? e : e instanceof Error ? e.message : String(e));
     }
 
-    return { text:text, errors:logger.errors, warnings:logger.warnings, infos:logger.infos };
+    return { text:text, errors:logger.errors, warnings:logger.warnings,
+        infos:logger.infos, diagnostics:logger.diagnostics };
 }
 
 export default gen_words;

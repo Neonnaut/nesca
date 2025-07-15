@@ -2,7 +2,18 @@ function get_example(example:string):string {
     var choice = '';
 
     if (example == "basic") {
-      choice = `Default`;
+      choice = `BEGIN categories
+C = p t k m n
+V = a i e o u
+END
+
+a, e -> o, i
+
+% x  y
+i ix ^
+j -  +
+
+graphemes: x, a, b`;
 
     } else if (example == "choice 2") {
       choice = `; `;

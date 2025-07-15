@@ -9,8 +9,8 @@ import { getCatSeg, GetTransform, makePercentage, resolve_nested_categories,
 type DiachronicRule = {
   target: string[];
   result: string[];
-  condition: string[];
-  exception: string[];
+  conditions: string[];
+  exceptions: string[];
 };
 
 class Resolver {
@@ -22,6 +22,12 @@ class Resolver {
 
     private category_strings: Map<string, string>;
     public categories: Map<string, { graphemes:string[], weights:number[]} >;
+
+    public pre_transforms: {
+        target:string, result:string,
+        conditions:{ before:string, after:string }[], exceptions:{ before:string, after:string }[],
+        line_num:string
+    }[];
     
     public transforms: { target:string[], result:string[], line_num:string}[];
     public graphemes: string[];
@@ -54,6 +60,8 @@ class Resolver {
         this.transforms = [];
 
         this.input_words = [];
+
+        this.pre_transforms = [];
     }
 
     parse_file(file: string) {
@@ -83,17 +91,9 @@ class Resolver {
                     continue;
                 }
                 
-                let [target, result, valid] = GetTransform(line_value);
+                let [target, result, conditions, exceptions] = this.GetTransform(line_value);
 
-                if ( !valid ) {
-                    this.logger.warn(`Malformed transform at line ${this.file_line_num + 1} -- expected \`old → new\` or a clusterfield`);
-                    continue;
-                } else if ( target.length != result.length ){
-                    this.logger.warn(`Malformed transform at line ${this.file_line_num + 1} -- expected an equal amount of concurrent-set targets to concurrent-set results`);
-                    continue;
-                }
-
-                this.add_transform(target, result, `${this.file_line_num + 1}`);
+                this.add_transform(target, result, conditions, exceptions, `${this.file_line_num + 1}`);
                 continue;
             }
 
@@ -134,8 +134,95 @@ class Resolver {
         this.category_strings.set(name, field);
     }
 
-    add_transform(target:string[], result:string[], line_num:string) {
-        this.transforms.push( { target:target, result:result, line_num:line_num} );
+    GetTransform(input: string): [
+    string,
+    string,
+    { before: string; after: string }[],
+    { before: string; after: string }[]
+    ] {
+    if (input === "") {
+        throw new Error("No input");
+    }
+
+    const divided = input.split(/->|>|→/);
+    if (divided.length === 1) {
+        throw new Error(`No arrows in transform at line ${this.file_line_num + 1}`);
+    }
+    if (divided.length !== 2) {
+        throw new Error(`Too many arrows in transform at line ${this.file_line_num + 1}`);
+    }
+
+    const target = divided[0].trim();
+    if (target === "") {
+        throw new Error(`Target is empty in transform at line ${this.file_line_num + 1}`);
+    }
+
+    const slashIndex = divided[1].indexOf('/');
+    const bangIndex = divided[1].indexOf('!');
+
+    const delimiterIndex = Math.min(
+        slashIndex === -1 ? Infinity : slashIndex,
+        bangIndex === -1 ? Infinity : bangIndex
+    );
+
+    const result = delimiterIndex === Infinity
+        ? divided[1].trim()
+        : divided[1].slice(0, delimiterIndex).trim();
+
+    if (result == "") {
+        throw new Error(`Result is empty in transform at line ${this.file_line_num + 1}`);
+    }
+
+    const environment = delimiterIndex === Infinity
+        ? ''
+        : divided[1].slice(delimiterIndex).trim();
+
+    const conditions: { before: string; after: string }[] = [];
+    const exceptions: { before: string; after: string }[] = [];
+
+    const blocks = environment.split('/').map(s => s.trim()).filter(Boolean);
+
+    for (const block of blocks) {
+        const segments = block.split('!').map(s => s.trim()).filter(Boolean);
+
+        for (let i = 0; i < segments.length; i++) {
+        const kind = i === 0 ? 'condition' : 'exception';
+        const validated = this.validateContext(segments[i], kind);
+        if (kind === 'condition') {
+            conditions.push(validated);
+        } else {
+            exceptions.push(validated);
+        }
+        }
+    }
+
+    return [target, result, conditions, exceptions];
+    }
+
+    validateContext(segment: string, kind: 'condition' | 'exception'): { before: string; after: string } {
+        const parts = segment.split('_');
+        if (parts.length !== 2) {
+            throw new Error(`${kind} "${segment}" must contain exactly one underscore`);
+        }
+
+        const [before, after] = parts;
+        if (!before && !after) {
+            throw new Error(`${kind} "${segment}" must have content on at least one side of '_'`);
+        }
+
+        return {
+            before: before || '',
+            after: after || ''
+        };
+    }
+
+    add_transform(target:string, result:string, 
+        conditions:{ before:string, after:string }[],
+        exceptions:{ before:string, after:string }[],
+        line_num:string) {
+        this.pre_transforms.push( { target:target, result:result,
+            conditions:conditions, exceptions:exceptions,
+            line_num:line_num} );
     }
 
     expand_categories() {
@@ -154,35 +241,6 @@ class Resolver {
             this.categories.set(key, newCategoryField);
         }
     }
-
-
-
-    parseDiachronicRule(ruleStr: string): DiachronicRule {
-        const [leftSide, ...rhsParts] = ruleStr.split('/').map(s => s.trim());
-        const [targetRaw, resultRaw] = leftSide.split('->').map(s => s.trim());
-
-        const target = targetRaw.split(',').map(s => s.trim());
-        const result = resultRaw.split(/\s+/).map(s => s.trim());
-
-        const condition: string[] = [];
-        const exception: string[] = [];
-
-        for (const part of rhsParts) {
-            const subParts = part.split('!').map(s => s.trim());
-            if (subParts[0]) condition.push(subParts[0]);
-            exception.push(...subParts.slice(1).filter(Boolean));
-        }
-
-        // Handle case with exceptions but no '/'
-        if (rhsParts.length === 0 && resultRaw.includes('!')) {
-            const [rPart, ...rawExceptions] = resultRaw.split('!').map(s => s.trim());
-            result.length = 0;
-            result.push(...rPart.split(/\s+/).filter(Boolean));
-            exception.push(...rawExceptions.filter(Boolean));
-        }
-        return { target, result, condition, exception };
-    }
-
 
     recursiveExpansion(
         input: string,
@@ -260,7 +318,43 @@ class Resolver {
                 }
             }
         }
-        this.add_transform(concurrent_target, concurrent_result, `${this.file_line_num + 1}`);
+        this.add_transform(concurrent_target.join(", "), concurrent_result.join(", "), 
+            [], [], `${this.file_line_num + 1}`);
+    }
+
+    resolve_transforms() {
+         // Resolve brackets, put categories in transforms etc.
+        
+        let transforms = [];
+        for (let i = 0; i < this.pre_transforms.length; i++) {
+            let line_num = this.pre_transforms[i].line_num;
+
+            let target = this.pre_transforms[i].target;
+
+            let result = this.pre_transforms[i].result;
+
+            let exceptions = [];
+            for (let j = 0; j < this.pre_transforms[i].exceptions.length; j++) {
+                let exception_before = this.pre_transforms[i].exceptions[j].before
+                let exception_after = this.pre_transforms[i].exceptions[j].after;
+
+                exceptions.push({ before:exception_before, after:exception_after });
+            }
+
+            let conditions = [];
+            for (let j = 0; j < this.pre_transforms[i].conditions.length    ; j++) {
+                let condition_before = this.pre_transforms[i].conditions[j].before
+                let condition_after = this.pre_transforms[i].conditions[j].after;
+
+                conditions.push({ before:condition_before, after:condition_after });
+            }
+            transforms.push({
+                target: target, result: result,
+                conditions: conditions, exceptions: exceptions,
+                line_num: line_num
+            });
+        }
+        this.transforms = transforms;
     }
 
 
@@ -277,8 +371,16 @@ class Resolver {
         }
 
         let transforms = [];
-        for (let i = 0; i < this.transforms.length; i++) {
-            transforms.push(`  ${this.transforms[i].target.join(", ")} → ${this.transforms[i].result.join(", ")}`);
+        for (let i = 0; i < this.pre_transforms.length; i++) {
+            let exceptions = '';
+            for (let j = 0; j < this.pre_transforms[i].exceptions.length; j++) {
+                exceptions += ` ! ${this.pre_transforms[i].exceptions[j].before}_${this.pre_transforms[i].exceptions[j].after}`;
+            }
+            let conditions = '';
+            for (let j = 0; j < this.pre_transforms[i].conditions.length    ; j++) {
+                conditions += ` / ${this.pre_transforms[i].conditions[j].before}_${this.pre_transforms[i].conditions[j].after}`;
+            }   
+            transforms.push(`  ${this.pre_transforms[i].target} → ${this.pre_transforms[i].result} ${conditions} ${exceptions}`);
         }
 
         let info:string =
@@ -292,7 +394,7 @@ class Resolver {
             `\nGraphemes: ` + this.graphemes.join(', ');
         info = this.escape_mapper.restorePreserveEscapedChars(info);
 
-        this.logger.silent_info(info);
+        this.logger.info(info);
     }
 }
 
