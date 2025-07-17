@@ -50,14 +50,15 @@ class Transformer {
 
 
     applyTransform(
-        word: Word,
-        tokens: string[],
-        transform: { 
-            target: string[]; result: string[],
-            conditions: { before: string; after: string }[];
-            exceptions: { before: string; after: string }[];
-            line_num:string
-        }
+    word: Word,
+    tokens: string[],
+    transform: {
+        target: string[];
+        result: string[];
+        conditions: { before: string; after: string }[];
+        exceptions: { before: string; after: string }[];
+        line_num: string;
+    }
     ): string[] {
         function spanToLength(subTokens: string[], targetLen: number): number {
             let count = 0;
@@ -68,25 +69,61 @@ class Transformer {
             return subTokens.length;
         }
 
-        const { target, result } = transform;
+        function contextMatches(
+            full: string,
+            startIdx: number,
+            rawSearch: string,
+            before: string,
+            after: string
+        ): boolean {
+            const targetLen = rawSearch.length;
+
+            // BEFORE anchor
+            if (before === "#") {
+                if (startIdx !== 0) return false;
+            } else if (before.startsWith("#")) {
+                const expected = before.slice(1);
+                const actualPrefix = full.slice(0, startIdx);
+                if (startIdx !== 0 || actualPrefix !== expected) return false;
+            } else {
+                const actualBefore = full.slice(Math.max(0, startIdx - before.length), startIdx);
+                if (actualBefore !== before) return false;
+            }
+
+            // AFTER anchor
+            if (after === "#") {
+                if (startIdx + targetLen !== full.length) return false;
+            } else if (after.endsWith("#")) {
+                const expected = after.slice(0, -1);
+                const actualSuffix = full.slice(startIdx + targetLen);
+                if (startIdx + targetLen !== full.length || actualSuffix !== expected) return false;
+            } else {
+                const actualAfter = full.slice(startIdx + targetLen, startIdx + targetLen + after.length);
+                if (actualAfter !== after) return false;
+            }
+
+            return true;
+        }
+
+        const { target, result, conditions, exceptions } = transform;
 
         if (target.length !== result.length) {
             throw new Error("Mismatched target/result concurrent set lengths in a transform");
         }
 
         const replacements: { index: number; length: number; replacement: string }[] = [];
+        const fullWord = tokens.join("");
 
         for (let i = 0; i < target.length; i++) {
-            let rawSearch = target[i];
+            let rawSearch = target[i].replace(/\\/g, "");
             const isDelete = result[i] === "^";
-            let replacement = isDelete ? "" : result[i];
+            let replacement = isDelete ? "" : result[i].replace(/\\/g, "");
 
             if (replacement === "^REJECT") {
                 for (let j = 0; j < tokens.length; j++) {
                     const subTokens = tokens.slice(j);
                     const span = spanToLength(subTokens, rawSearch.length);
                     const window = subTokens.slice(0, span).join("");
-
                     if (window === rawSearch) {
                         word.rejected = true;
                         word.record_transformation(`${rawSearch} → ^REJECT`, transform.line_num, "❌");
@@ -95,50 +132,7 @@ class Transformer {
                 }
             }
 
-
-            // 🔒 Full-string match: #...#
-            if (rawSearch.startsWith("#") && rawSearch.endsWith("#") && !rawSearch.endsWith("\\#") && rawSearch.length > 2) {
-                rawSearch = rawSearch.replace(/\\/g, "");
-                replacement = replacement.replace(/\\/g, "");
-                const needle = rawSearch.slice(1, -1);
-                const joined = tokens.join("");
-                if (joined === needle) {
-                    replacements.push({ index: 0, length: tokens.length, replacement });
-                }
-                continue;
-            }
-
-            // ⛳ Prefix match: #abc
-            if (rawSearch.startsWith("#")) {
-                rawSearch = rawSearch.replace(/\\/g, "");
-                replacement = replacement.replace(/\\/g, "");
-                const needle = rawSearch.slice(1);
-                const span = spanToLength(tokens, needle.length);
-                const head = tokens.slice(0, span).join("");
-                if (head === needle) {
-                    replacements.push({ index: 0, length: span, replacement });
-                }
-                continue;
-            }
-
-            // 🏁 Suffix match: abc#
-            if ( rawSearch.endsWith("#")  && !rawSearch.endsWith("\\#") ) {
-                rawSearch = rawSearch.replace(/\\/g, "");
-                replacement = replacement.replace(/\\/g, "");
-                const needle = rawSearch.slice(0, -1);
-                const reversed = [...tokens].reverse();
-                const span = spanToLength(reversed, needle.length);
-                const tail = reversed.slice(0, span).reverse().join("");
-                if (tail === needle) {
-                    replacements.push({
-                        index: tokens.length - span,
-                        length: span,
-                        replacement,
-                    });
-                }
-                continue;
-            }
-
+            // Hacky way to get escape characters
             rawSearch = rawSearch.replace(/\\/g, "");
             replacement = replacement.replace(/\\/g, "");
 
@@ -147,8 +141,21 @@ class Transformer {
                 const subTokens = tokens.slice(j);
                 const span = spanToLength(subTokens, rawSearch.length);
                 const window = subTokens.slice(0, span).join("");
+
                 if (window === rawSearch) {
-                    replacements.push({ index: j, length: span, replacement });
+                    const startIdx = tokens.slice(0, j).join("").length;
+
+                    const passesCondition = conditions.length === 0 || conditions.some(cond =>
+                        contextMatches(fullWord, startIdx, rawSearch, cond.before, cond.after)
+                    );
+
+                    const blockedByException = exceptions.some(exc =>
+                        contextMatches(fullWord, startIdx, rawSearch, exc.before, exc.after)
+                    );
+
+                    if (passesCondition && !blockedByException) {
+                        replacements.push({ index: j, length: span, replacement });
+                    }
                 }
             }
         }
@@ -190,17 +197,19 @@ class Transformer {
         for (let i = 0; i < transform.target.length; i++) {
             const expected = transform.result[i] === "^" ? "" : transform.result[i];
             if (appliedSet.has(expected)) {
-            matchedTargets.push(transform.target[i]);
-            matchedResults.push(transform.result[i]);
+                matchedTargets.push(transform.target[i]);
+                matchedResults.push(transform.result[i]);
             }
         }
 
         if (matchedTargets.length > 0) {
             word.record_transformation(
-            `${matchedTargets.join(", ")} → ${matchedResults.join(", ")}`, transform.line_num,
-            normalized.join(" ")
+                `${matchedTargets.join(", ")} → ${matchedResults.join(", ")}`,
+                transform.line_num,
+                normalized.join(" ")
             );
         }
+
         return normalized;
     }
 
