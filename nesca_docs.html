@@ -221,6 +221,7 @@
         <thead>
           <tr>
             <th>Characters</th>
+            <th>Done</th>
             <th>Meaning</th>
           </tr>
         </thead>
@@ -228,96 +229,125 @@
         <tbody>
           <tr>
             <td><code class="example">;</code></td>
+            <td>Done</td>
             <td><a href="#vocComments">Comment</a></td>
           </tr>
           <tr>
+            <td><code class="example">\</code></td>
+            <td></td>
+            <td>Escapes a character after it</td>
+          </tr>
+          <tr>
             <td><code class="example">&gt;</code>, <code class="example">-&gt;</code>, <code class="example">=&gt;</code>, <code class="example">⇒</code>, <code class="example">→</code></td>
+            <td>Done</td>
             <td>Indicates <a href="#nascTheChange">change</a></td>
           </tr>
           <tr>
             <td><code class="example">,</code></td>
+            <td>Done</td>
             <td>Separates choices</td>
           </tr>
           <tr>
+            <td><code class="example"> </code></td>
+            <td></td>
+            <td>Space, separates choices. An alternative to commas</td>
+          </tr>
+          <tr>
             <td><code class="example">[</code>, <code class="example">]</code></td>
+            <td></td>
             <td><a href="#nascConcurrentSet">Concurrent-set</a> or <a href="#nascMergingSet">merging-set</a></td>
           </tr>
           <tr>
             <td><code class="example">(</code>, <code class="example">)</code></td>
+            <td></td>
             <td><a href="#nascOptionalSet">Optional-set</a></td>
           </tr>
           <tr>
-            <td><code class="example">^REJECT</code></td>
+            <td><code class="example">^REJECT</code>, <code class="example">^R</code></td>
+            <td>Done</td>
             <td><a href="#nascReject">Rejects</a> a word</td>
           </tr>
           <tr>
+            <td><code class="example">^</code>, <code class="example">∅</code></td>
+            <td>Done</td>
+            <td><a href="#nascInsertionAndDeletion">Insertion</a> when in <code class="example">TARGET</code>, <a href="#nascInsertionAndDeletion">deletion</a> when in <code class="example">RESULT</code></td>
+          </tr>
+          <tr>
             <td><code class="example">/</code></td>
+            <td>Done</td>
             <td><a href="#nascTheCondition">The condition</a> follows this character</td>
           </tr>
           <tr>
+            <td><code class="example">!</code></td>
+            <td>Done</td>
+            <td><a href="#nascTheException">The exception</a> follows this character</td>
+          </tr>
+          <tr>
             <td><code class="example">_</code></td>
+            <td>Done</td>
             <td>The underscore <code class="example">_</code> is a reference to the target</td>
           </tr>
           <tr>
             <td><code class="example">#</code></td>
+            <td>Done</td>
             <td><a href="#nascWordBoundary">Word boundary</a></td>
           </tr>
           <tr>
-            <td><code class="example">$</code></td>
-            <td><a href="#nascSyllableBoundary">Syllable boundary</a></td>
-          </tr>
-          <tr>
-            <td><code class="example">!</code></td>
-            <td><a href="#nascTheException">The exception</a> follows this character</td>
+            <td><code class="example">C</code>, <code class="example">D</code>, <code class="example">Ḱ</code>, ...</td>
+            <td></td>
+            <td>Any one-length capital letter can refer to a <a href="#nescaCategories">category</a></td>
           </tr>
           <tr>
             <td><code class="example">{</code>, <code class="example">}</code></td>
-            <td><a href="#nascUsingCategories">Category</a> or <a href="#nascFeature">feature-matrix</a></td>
+            <td></td>
+            <td><a href="#nascFeature">Feature-matrix</a></td>
           </tr>
           <tr>
             <td><code class="example">*</code></td>
+            <td></td>
             <td><a href="#nascWildcard">Wildcard</a>, matches exactly 1 of any character</td>
           </tr>
           <tr>
             <td><code class="example">"</code></td>
+            <td></td>
             <td><a href="#nascDittoMark">Ditto-mark</a>, matches exactly 1 of the previous character</td>
           </tr>
           <tr>
             <td><code class="example">+</code></td>
+            <td></td>
             <td><a href="#nascPlusMark">Plus-mark</a>, matches 1 or more of the previous character</td>
           </tr>
           <tr>
-            <td><code class="example">~</code>, <code class="example">…</code></td>
+            <td><code class="example">&</code>, <code class="example">…</code></td>
+            <td></td>
             <td><a href="#nascAnythingsMark">Anythings-mark</a>, matches 1 or more of any character. It is non-greedy</td>
           </tr>
           <tr>
             <td><code class="example">=[</code>, <code class="example">]</code></td>
+            <td></td>
             <td><a href="#nascQuantifier">Quantifier</a></td>
           </tr>
           <tr>
             <td><code class="example">&lt;[</code>, <code class="example">]</code></td>
+            <td></td>
             <td><a href="#nascBlocker">Blocker</a></td>
           </tr>
           <tr>
             <td><code class="example">@[</code>, <code class="example">]</code></td>
+            <td></td>
             <td><a href="#nascPositioner">Positioner</a></td>
           </tr>
           <tr>
-            <td><code class="example">^</code></td>
-            <td><a href="#nascInsertionAndDeletion">Insertion</a> when in <code class="example">TARGET</code>, <a href="#nascInsertionAndDeletion">deletion</a> when in <code class="example">RESULT</code></td>
-          </tr>
-          <tr>
             <td><code class="example">|</code></td>
+            <td></td>
             <td>Indicates <a href="#nascMetathesis">metathesis</a>, and the reordered contents</td>
           </tr>
           <tr>
             <td><code class="example">1</code>, <code class="example">2</code>, ... <code class="example">9</code></td>
+            <td></td>
             <td>In a <a href="#nascMetathesis">metathesis</a> rule, in <code class="example">RESULT</code>, these represent the changing graphemes</td>
           </tr>
-          <tr>
-            <td><code class="example">\</code></td>
-            <td>Escapes a character after it</td>
-          </tr>
+
         </tbody>
         </table>
 
