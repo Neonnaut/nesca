@@ -29,7 +29,7 @@ class Word_Bank {
         const input_word_array = input_words.split(this.word_divider);
         for (let i = 0; i < input_word_array.length; i++) {
             if (input_word_array[i] === '') { continue }
-            const word = new Word(input_word_array[i].trim(), input_word_array[i].trim());
+            const word = new Word('Input-word', input_word_array[i].trim());
             this.words.push(word);
         }
     }

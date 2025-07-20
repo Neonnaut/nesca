@@ -1,8 +1,8 @@
 import type Escape_Mapper from './escape_mapper';
 import Logger from './logger';
 
-import { getCatSeg, makePercentage,
-    valid_category_brackets, 
+import { getCatSeg,
+    // makePercentage,
  } from './utilities'
 
 class Resolver {

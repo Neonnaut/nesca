@@ -12,10 +12,11 @@ function gen_words(
     word_divider: string = "\n"
 ): { text:string, errors:string[], warnings:string[], infos:string[], diagnostics:string[] } {
     const logger = new Logger();
-    let text = 'wiggy wiggy wiggly words';
-    const build_start = Date.now();
+    let text = '';
 
     try {
+        const build_start = Date.now();
+        
         const escape_mapper = new Escape_Mapper();
 
         const r = new Resolver( logger, escape_mapper, mode, word_divider );
@@ -38,7 +39,9 @@ function gen_words(
         text = b.make_text();
 
     } catch (e: unknown) {
-        logger.error(typeof e === "string" ? e : e instanceof Error ? e.message : String(e));
+        if (!(e instanceof logger.ValidationError)) {
+            logger.uncaught_error(e as Error);
+        }
     }
 
     return { text:text, errors:logger.errors, warnings:logger.warnings,
