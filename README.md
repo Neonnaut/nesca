@@ -1,7 +1,6 @@
 # Nesca
 
-[![version][1]][2] [![license][3]][4] [![Tests]][badge-link]
-[![issue count][5]][6] [![git activity][7]][8]
+[![version][1]][2] [![license][3]][4] [![Tests](https://github.com/Neonnaut/nesca/actions/workflows/ci.yml/badge.svg)](https://github.com/Neonnaut/nesca/actions/workflows/ci.yml) [![issue count][5]][6] [![git activity][7]][8]
 
 ![Nesca logo](./img/nesca.svg?raw=true "Nesca")
 
