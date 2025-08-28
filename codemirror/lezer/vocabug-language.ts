@@ -1,9 +1,9 @@
-/*import { parser } from "./lezer/vocabug-parser";
+/*import { parser } from "./lezer/nesca-parser";
 import { LRLanguage, LanguageSupport } from "@codemirror/language";
 import { styleTags, tags as t } from "@lezer/highlight";
 
 // Highlighting
-const vocabugHighlight = styleTags({
+const nescaHighlight = styleTags({
   Comment: t.lineComment,
   Escape: t.escape,
   Operator: t.operator,
@@ -20,9 +20,9 @@ const vocabugHighlight = styleTags({
 });
 
 // Language definition
-export const vocabugLanguage = LRLanguage.define({
+export const nescaLanguage = LRLanguage.define({
   parser: parser.configure({
-    props: [vocabugHighlight]
+    props: [nescaHighlight]
   }),
   languageData: {
     commentTokens: { line: ";" }
@@ -30,6 +30,6 @@ export const vocabugLanguage = LRLanguage.define({
 });
 
 // Extension
-export function VocabugSupport() {
-  return new LanguageSupport(vocabugLanguage);
+export function NescaSupport() {
+  return new LanguageSupport(nescaLanguage);
 }*/

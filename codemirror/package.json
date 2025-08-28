@@ -1,7 +1,7 @@
 {
-  "name": "codemirror-lang-vocabug",
+  "name": "codemirror-lang",
   "version": "0.1.0",
-  "description": "Vocabug language support for CodeMirror",
+  "description": "language support for CodeMirror",
   "scripts": {
     "test": "mocha test/test.js",
     "prepare": "rollup -c"

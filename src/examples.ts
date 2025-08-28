@@ -1,27 +1,16 @@
-function get_example(example:string):string {
-    var choice = '';
-
-    if (example == "basic") {
-      choice = `BEGIN categories
-C = p t k m n
+const examples: { [key: string]: string } = {
+  basic: 
+`C = p t k m n j s l
 V = a i e o u
-END
 
+graphemes: x, a, b
+
+BEGIN transform:
 a, e -> o, i
 
 % x  y
 i ix ^
-j -  +
+j -  +`
+};
 
-graphemes: x, a, b`;
-}
-
-    if (choice == '' || choice == null || choice == undefined) {
-        return '?';
-    } else {
-        return choice;
-    }
-
-}
-
-export { get_example };
+export { examples };

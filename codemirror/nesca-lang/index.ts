@@ -22,40 +22,40 @@ const cappa = "[A-Z" +
     // Γ Δ Θ Λ Ξ Π Σ Φ Ψ Ω
     "\u0393\u0394\u0398\u039B\u039E\u03A0\u03A3\u03A6\u03A8\u03A9]";
 
-const vocabugEngineRules = [
+const nescaEngineRules = [
   { token: "operator",     regex: /\s+(compose|decompose|capitalise|decapitalise|capitalize|decapitalize|to-upper-case|to-lower-case|xsampa-to-ipa|ipa-to-xsampa)(?!\S)/ }
 ];
-const vocabugListRules = [
+const nescaListRules = [
   { token: "escape",   regex: /\\.|@\{(?:Space|Acute|DoubleAcute|Grave|DoubleGrave|Circumflex|Caron|Breve|InvertedBreve|TildeAbove|TildeBelow|Macron|Dot|DotBelow|Diaeresis|DiaeresisBelow|Ring|RingBelow|Horn|Hook|CommaAbove|CommaBelow|Cedilla|Ogonek)\}/ },
   { token: "link",     regex: /,/ }
 ];
 
-const vocabugCategoryRules = [
+const nescaCategoryRules = [
   { token: "escape",   regex: /\\.|@\{(?:Space|Acute|DoubleAcute|Grave|DoubleGrave|Circumflex|Caron|Breve|InvertedBreve|TildeAbove|TildeBelow|Macron|Dot|DotBelow|Diaeresis|DiaeresisBelow|Ring|RingBelow|Horn|Hook|CommaAbove|CommaBelow|Cedilla|Ogonek)\}/ },
   { token: "link",     regex: /,|=/ },
   { token: "operator", regex: /\^|∅/ }
 ];
 
-const vocabugFeatureRules = [
+const nescaFeatureRules = [
   { token: "escape",   regex: /\\.|@\{(?:Space|Acute|DoubleAcute|Grave|DoubleGrave|Circumflex|Caron|Breve|InvertedBreve|TildeAbove|TildeBelow|Macron|Dot|DotBelow|Diaeresis|DiaeresisBelow|Ring|RingBelow|Horn|Hook|CommaAbove|CommaBelow|Cedilla|Ogonek)\}/ },
   { token: "link",     regex: /,|=/ }
 ];
 
-const vocabugTransformRules = [
+const nescaTransformRules = [
   { token: "escape",   regex: /\\.|@\{(?:Space|Acute|DoubleAcute|Grave|DoubleGrave|Circumflex|Caron|Breve|InvertedBreve|TildeAbove|TildeBelow|Macron|Dot|DotBelow|Diaeresis|DiaeresisBelow|Ring|RingBelow|Horn|Hook|CommaAbove|CommaBelow|Cedilla|Ogonek)\}/ },
   { token: "link",     regex: />|->|→|=>|⇒|\/|!|\?|,|_/ },
   { token: "operator", regex: /\^REJECT|\^R|\^|∅|~/ }, // > and ;
   { token: "regexp",   regex: /\[|\]|\(|\)|\{|\}|#|\+|\*|:|…|&|</ }
 ];
 
-const vocabugClusterRules = [
+const nescaClusterRules = [
   { token: "escape",   regex: /\\.|@\{(?:Space|Acute|DoubleAcute|Grave|DoubleGrave|Circumflex|Caron|Breve|InvertedBreve|TildeAbove|TildeBelow|Macron|Dot|DotBelow|Diaeresis|DiaeresisBelow|Ring|RingBelow|Horn|Hook|CommaAbove|CommaBelow|Cedilla|Ogonek)\}/ },
   { token: "link",     regex: /,|\/|!|\?|_|\+/ },
   { token: "operator", regex: /\-|\^REJECT|\^R|\^|∅/ }, // > and ;
   { token: "regexp",   regex: /\[|\]|\(|\)|\{|\}|#|\+|\*|:|…|&/ }
 ];
 
-const vocabugFeatureFieldRules = [
+const nescaFeatureFieldRules = [
   { token: "escape",   regex: /\\.|@\{(?:Space|Acute|DoubleAcute|Grave|DoubleGrave|Circumflex|Caron|Breve|InvertedBreve|TildeAbove|TildeBelow|Macron|Dot|DotBelow|Diaeresis|DiaeresisBelow|Ring|RingBelow|Horn|Hook|CommaAbove|CommaBelow|Cedilla|Ogonek)\}/ },
   { token: "link",     regex: /,|\./ },
   { token: "operator", regex: /\+/ },
@@ -72,9 +72,9 @@ type State = {
   featureList: string[];
 };
 
-const vocabugParser: StreamParser<State> = {
+const nescaParser: StreamParser<State> = {
 
-    name: "Vocabug",
+    name: "Nesca",
     startState: (i): State => { return {
         mode: 'none',
         feature_matrix: false,
@@ -217,7 +217,7 @@ const vocabugParser: StreamParser<State> = {
                 }
             }
 
-            for (let rule of vocabugTransformRules) {
+            for (let rule of nescaTransformRules) {
                 if (stream.match(rule.regex)) {
                     return rule.token;
                 }
@@ -225,7 +225,7 @@ const vocabugParser: StreamParser<State> = {
         }
 
         if (state.mode == 'listLine') {
-            for (let rule of vocabugListRules) {
+            for (let rule of nescaListRules) {
                 if (stream.match(rule.regex)) {
                     return rule.token;
                 }
@@ -239,7 +239,7 @@ const vocabugParser: StreamParser<State> = {
                 }
             }
 
-            for (let rule of vocabugCategoryRules) {
+            for (let rule of nescaCategoryRules) {
                 if (stream.match(rule.regex)) {
                     return rule.token;
                 }
@@ -252,7 +252,7 @@ const vocabugParser: StreamParser<State> = {
                     return "tagName";
                 }
             }
-            for (let rule of vocabugFeatureRules) {
+            for (let rule of nescaFeatureRules) {
                 if (stream.match(rule.regex)) {
                     return rule.token;
                 }
@@ -272,7 +272,7 @@ const vocabugParser: StreamParser<State> = {
                 }
             }
 
-            for (let rule of vocabugFeatureFieldRules) {
+            for (let rule of nescaFeatureFieldRules) {
                 if (stream.match(rule.regex)) {
                     return rule.token;
                 }
@@ -280,7 +280,7 @@ const vocabugParser: StreamParser<State> = {
         }
 
         if (state.mode == 'engine') {
-            for (let rule of vocabugEngineRules) {
+            for (let rule of nescaEngineRules) {
                 if (stream.match(rule.regex)) {
                     return rule.token;
                 }
@@ -295,7 +295,7 @@ const vocabugParser: StreamParser<State> = {
                 return "meta";
             }
 
-            for (let rule of vocabugClusterRules) {
+            for (let rule of nescaClusterRules) {
                 if (stream.match(rule.regex)) {
                     return rule.token;
                 }
@@ -306,6 +306,6 @@ const vocabugParser: StreamParser<State> = {
     }
 };
 
-const vocabugStream = StreamLanguage.define(vocabugParser);
+const nescaStream = StreamLanguage.define(nescaParser);
 
-export { vocabugStream };
+export { nescaStream };

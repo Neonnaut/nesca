@@ -436,7 +436,7 @@
       <p>If you are using this, you should be very interested in the <a href="#nescaEngine">Compose engine</a>.</p>
 
       <h2 id="nescaGraphemes"><a class="head-num">5</a>Defining graphemes</h2>
-      <p>The <code class="example">graphemes:</code> directive tells Vocabug which (multi)graphs, including character + combining diacritics, are to be treated as grapheme units when using <a href="#nescaTransform">transformations</a>.</p>
+      <p>The <code class="example">graphemes:</code> directive tells Nesca which (multi)graphs, including character + combining diacritics, are to be treated as grapheme units when using <a href="#nescaTransform">transformations</a>.</p>
       <div class="prog-pre"><span class="directive">graphemes</span><span class="link">:</span> a<span class="link">,</span> b<span class="link">,</span> c<span class="link">,</span> ch<span class="link">,</span> e<span class="link">,</span> f<span class="link">,</span> h<span class="link">,</span> i<span class="link">,</span> k<span class="link">,</span> l<span class="link">,</span> m<span class="link">,</span> n<span class="link">,</span> o<span class="link">,</span> p<span class="link">,</span> p'<span class="link">,</span> r<span class="link">,</span> s<span class="link">,</span> t<span class="link">,</span> t'<span class="link">,</span> y</div>
       <p>In the above example, we defined <code class="example">ch</code> as a grapheme. This would stop a rule such as <code class="example">c -> g</code> changing the word <code class="example">chat</code> into <code class="example">ghat</code>, but it will make <code class="example">cobra</code> change into <code class="example">gobra</code>.</p>
 
@@ -529,7 +529,7 @@
       <p>This creates three groups of graphemes. <code class="example">C</code> is the group of all consonants, <code class="example">V</code> is the group of all vowels, and <code class="example">F</code> is the group of some of the consonants that will be used syllable finally.</p>
       <p>These graphemes are separated by commas, however an alternative is to use spaces: <code class="example">C = t n k m ch l ꞌ s r d h w b y p g</code>.</p>
       
-      <p>Need more than 26 categories? Vocabug supports the following additional characters as the key of a category or segment: <code class="example">Á Ć É Ǵ Í Ḱ Ĺ Ḿ Ń Ó Ṕ Ŕ Ś Ú Ẃ Ý Ź À È Ì Ǹ Ò Ù Ẁ Ỳ Ǎ Č Ď Ě Ǧ Ȟ Ǐ Ǩ Ľ Ň Ǒ Ř Š Ť Ǔ Ž Ä Ë Ḧ Ï Ö Ü Ẅ Ẍ Ÿ Γ Δ Θ Λ Ξ Π Σ Φ Ψ Ω</code></p>
+      <p>Need more than 26 categories? Nesca supports the following additional characters as the key of a category or segment: <code class="example">Á Ć É Ǵ Í Ḱ Ĺ Ḿ Ń Ó Ṕ Ŕ Ś Ú Ẃ Ý Ź À È Ì Ǹ Ò Ù Ẁ Ỳ Ǎ Č Ď Ě Ǧ Ȟ Ǐ Ǩ Ľ Ň Ǒ Ř Š Ť Ǔ Ž Ä Ë Ḧ Ï Ö Ü Ẅ Ẍ Ÿ Γ Δ Θ Λ Ξ Π Σ Φ Ψ Ω</code></p>
 
       <p>You can use categories inside categories. For example:</p>
       <div class="prog-pre"><span class="directive">category-distribution</span><span class="link">:</span> <span class="directive">flat</span>

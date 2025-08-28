@@ -1,6 +1,6 @@
 import MyWorker from './worker?worker';
 
-import { get_example } from './examples.ts';
+import { examples } from './examples.ts';
 
 const cm6 = (window as any).cm6; // This was global. Stops TS from complaining
 
@@ -16,10 +16,10 @@ function create_file_editor() {
             input_words = gotLocalStorage[1]; filename = gotLocalStorage[2];
         } catch {
             localStorage.removeItem("nesca");
-            content = get_example('basic');
+            content = examples['basic'];
         }
     } else {
-        content = get_example('basic');
+        content = examples['basic'];
     }
     if (localStorage.hasOwnProperty('colourScheme')) {
         if (localStorage.getItem('colourScheme') != 'dark-mode') {
@@ -42,7 +42,7 @@ function create_file_editor() {
     );
 }
 
-$(window).on('load', function () {
+window.addEventListener("load", () => {
     const editor = create_file_editor();
 
     editor.dispatch({
@@ -247,7 +247,7 @@ $(window).on('load', function () {
     document.querySelectorAll(".nesca-example").forEach((button) => {
         button.addEventListener("click", () => {
             const choice = (button as HTMLElement).getAttribute("value") || '?';
-            const text = get_example(choice);
+            const text = examples[choice];
             const confirmed = window.confirm("Replace editor text with example?");
             
             if (confirmed) {
