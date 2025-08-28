@@ -4,7 +4,7 @@ html {
   color-scheme: dark;
 
   --bg: #000;
-  --section-bg: #303030;
+  --section-bg: #2a2a2a;
   --text: #ddd;
   --bold: #fff;
   --link: #acd3ff;
@@ -60,6 +60,19 @@ html {
   --off-white: #f3f3f3;
   --pale-brown: #eee9e9;
   --pale-blue: #ffedf8;
+
+  --prog-variable: #eeeeff;
+  --prog-comment: #bee79d;
+  --prog-escape: #f0f0f0;
+  --prog-escape-background: #584747;
+  --prog-directive: #ff7a7a;
+  --prog-link: #a6d3f7;
+  --prog-operator: #44ebd0;
+  --prog-regexp: #e687e4;
+  --prog-catkey: #ffcd90;
+  --prog-weight: #ff7a7a;
+  --prog: #ffffff;
+  --prog-background: #080808;
 }
 
 .light-mode {
@@ -120,6 +133,19 @@ html {
   --off-white: #ffffff;
   --pale-brown: #fbf6f9;
   --pale-blue: #c9f3ffbb;
+
+  --prog-variable: #000000;
+  --prog-comment: #277022;
+  --prog-escape: #000000;
+  --prog-escape-background: #e8d9cc;
+  --prog-directive: #a11c08ff;
+  --prog-link: #0066b9ff;
+  --prog-operator: #024bba;
+  --prog-regexp: #990085ff;
+  --prog-catkey: #7f5700ff;
+  --prog-weight: #a11c08ff;
+  --prog: #000;
+  --prog-background: #eeeded;
 }
 
 .warm-mode {
@@ -180,6 +206,19 @@ html {
   --off-white: #ffffff;
   --pale-brown: #edebeb;
   --pale-blue: #c9f3ffbb;
+
+  --prog-variable: #eeeeff;
+  --prog-comment: #bee79d;
+  --prog-escape: #f0f0f0;
+  --prog-escape-background: #584747;
+  --prog-directive: #ff7a7a;
+  --prog-link: #a6d3f7;
+  --prog-operator: #44ebd0;
+  --prog-regexp: #e687e4;
+  --prog-catkey: #ffcd90;
+  --prog-weight: #ff7a7a;
+  --prog: #ffffff;
+  --prog-background: #333333;
 }
 
 body {
@@ -363,6 +402,7 @@ thead {
   border-right: solid var(--light-grey-border);
   border-right-width: 0.5px;
   font-weight: 400;
+  font-size: inherit;
   padding: 2px 5px 2px 5px;
   text-align: left;
 }
@@ -403,7 +443,7 @@ thead {
 .fixed-header thead tr {
   display: block;
 }
-code.example {
+code.example, code.voc-static {
   font-family: monospace;
   word-wrap: break-word;
   padding: 0 2px 1px 2px;
@@ -412,7 +452,7 @@ code.example {
   border-radius: 3px;
   font-size: 1.18em;
 }
-pre.example {
+pre.example, pre.voc-static {
   background: var(--code-bg);
   color: var(--code-text);
   border-radius: 3px;
@@ -422,6 +462,51 @@ pre.example {
   margin: 0;
   padding: 8px 8px;
 }
+
+.prog-pre {
+  font-family: monospace;
+  white-space: pre;
+  background: var(--prog-background);
+  color: var(--prog);
+  border-radius: 3px;
+  font-size: 1.18em;
+  overflow-y: clip;
+  overflow-x: auto;
+  margin: 0;
+  padding: 8px 8px;
+}
+
+.prog-pre .variable {
+  color:var(--prog-directive);
+}
+.prog-pre .comment {
+  color:var(--prog-comment);
+}
+.prog-pre .escape {
+  color:var(--prog-escape);
+  background: var(--prog-escape-background);
+}
+.prog-pre .directive {
+  color:var(--prog-directive);
+}
+.prog-pre .link {
+  color:var(--prog-link);
+}
+.prog-pre .operator {
+  color:var(--prog-operator);
+  font-weight: bold;
+}
+.prog-pre .regexp {
+  color:var(--prog-regexp);
+}
+.prog-pre .catkey {
+  color:var(--prog-catkey);
+}
+.prog-pre .weight {
+  color:var(--prog-weight);
+  font-style: italic;
+}
+
 abbr:hover {
   cursor: help;
 }
@@ -1005,4 +1090,38 @@ font-family: "Charis SIL", "Doulos SIL", Gentium, Arial, Serif;
     padding: 4px 5px;
     resize: none;
     overflow: hidden;
+}
+
+.voc-ipa-table {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 2px;
+  justify-content: flex-start; /* 👈 This ensures left-alignment */
+  box-sizing: border-box;
+}
+
+.voc-ipa-table button {
+  color: #000;
+
+  border-radius: 0;
+
+  font-family: "Charis SIL", "Doulos SIL", Gentium, Arial, Serif;
+  width: 28px;
+  
+  padding: 5px 0;
+  margin: 0;
+
+  box-shadow: inset 0 1px 3px rgba(88,88,88,0.4), 0 1px rgb(88 88 88 / 10%);
+  -webkit-box-shadow: inset 0 1px 3px rgba(88,88,88,0.4), 0 1px rgb(88 88 88 / 10%);
+
+  -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;
+  user-select: none;
+}
+.voc-ipa-table button:hover {
+  -webkit-box-shadow: 1px 1px 3px var(--light-grey-shadow);
+        box-shadow: 1px 1px 3px var(--light-grey-shadow);
+}
+.voc-ipa-table button:active {
+  -webkit-box-shadow: none;
+  box-shadow: none;
 }

@@ -1,16 +1,16 @@
 import { get_last } from './utilities'
 
 class Word {
-    static mode: string = 'word-list';
+    static apply_mode: string = 'word-list';
 
-    transformations: string[];
+    transformations: (string|null)[];
     forms: string[];
     rejected: boolean;
     line_nums: string[];
 
-    constructor(skeleton: string, adult: string) {
-        this.transformations = [skeleton];
-        this.forms = [adult];
+    constructor(skeleton: string) {
+        this.transformations = [null];
+        this.forms = [skeleton];
         this.rejected = false; // This may be changed in transforms or when the word is ""
         this.line_nums = [''];
     }
@@ -25,13 +25,18 @@ class Word {
 
     get_word(): string { // Use this when creating the text
         let output: string | undefined = '';
-        if (Word.mode == 'debug') {
+
+        if (Word.apply_mode == 'debug') {
             for (let i = 0; i < this.forms.length; i++) {
-                output += `⟨${this.transformations[i]}⟩ :${this.line_nums[i]} ⟨${this.forms[i]}⟩\n`;
+                if (this.transformations[i]) {
+                    output += `⟨${this.transformations[i]}⟩${this.line_nums[i]} ➤ ⟨${this.forms[i]}⟩\n`;
+                } else {
+                    output += `⟨${this.forms[i]}⟩\n`;
+                }
             }
             return output;
         }
-        if (Word.mode == 'old-to-new') {
+        if (Word.apply_mode == 'old-to-new') {
             output = `${this.forms[0]} => ${get_last(this.forms)}`;
             return output;
         }
@@ -42,10 +47,14 @@ class Word {
         return output;
     }
 
-    record_transformation(rule:string, line_num:string, form:string): void {
+    record_transformation(rule:string|null, form:string, line_num:number|null = null): void {
         this.transformations.push(rule);
         this.forms.push(form);
-        this.line_nums.push(line_num);
+        let my_line_num = '';
+        if (line_num != null) {
+            my_line_num = `:${line_num+1}`
+        }
+        this.line_nums.push(my_line_num);
     }
 }
 

@@ -4,7 +4,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta charset="UTF-8">
   <!-- Website information -->
-  <title>NeSCA</title>
+  <title>Nesca</title>
   <meta name="description" content="A tool to apply sound changes.">
   <meta name="keywords" content="conlangs">
   <meta name="author" content="Neonnaut">
@@ -13,14 +13,11 @@
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="src/theme-picker.ts"></script>
 
-  <script src="codemirror/cm6.bundle.js"></script>
+  <script src="codemirror/dist/cm6.bundle.js"></script>
 
   <!-- Fonts -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <!-- Icons -->
-  <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
 </head>
 <body>
   <nav id="myNav">
@@ -37,25 +34,22 @@
   <div id="content">
     <section id="top">
       <div>
-        <img src="img/nesca.png" alt="Astronaut" width="100" height="100" style="float: left;">
+        <img src="img/nesca.svg" alt="Astronaut" style="float: left;">
         
-        <h1 style="margin: 15px 0 10px 0; padding-top: 10px;">NeSCA</h1>
+        <h1 style="margin: 15px 0 10px 0;">Nesca SC</h1>
 
         <div style="padding-left: 5px;">
-          <b>Version 0.0.0</b><br>
+          <b>Version 0.3.0</b><br>
           <a href="./nesca_docs.html">Read the documentation here</a>
         </div>
-      </div>
-
-      <br>
-      <p>NeSCA is a sound change applier. <a href="./nesca_docs.html">Read the documentation here</a>.</p>
+      </div><div style="clear: both;"></div>
 
         <table>
           <tbody><tr>
           <td>
             <div>
               <h5>Input</h5>
-              <textarea id="nesca-word-input" spellcheck="false" autocomplete="off" rows="22" cols="39" placeholder="eee"></textarea>
+              <textarea id="nesca-word-input" spellcheck="false" autocomplete="off" rows="22" cols="39"></textarea>
             </div>
           </td>
           <td>
@@ -71,6 +65,7 @@
           <input type="submit" id="apply-button" value="Apply">
           <input type="submit" id='nesca-copy' value="Copy">
           <input type="button" id="nesca-clear-editor" value="Clear">
+          <input type="button" id="nesca-help" value="Help">
         </div>
       
         <div id='voc-output-message' style="border: 2px solid #000;"></div>
@@ -92,7 +87,11 @@
   
             </div>
             <div style="float: left; display: inline;">
-  
+              <!--
+              <input type="checkbox" id="input-has-gloss">
+              <label for="input-has-gloss">Input has gloss</label><br>
+              -->
+
               <input type="checkbox" id="show-keyboard">
               <label for="show-keyboard">Show keyboard</label><br>
 
@@ -110,8 +109,6 @@
   
         <fieldset style="float: left;">
           <legend>File save / load</legend>
-          <input type="checkbox" id="include-input">
-          <label for="include-input">Include input lexicon in file</label><br>
           <label for="file-name">File name:</label><br>
           <input type="text" autocomplete="off" id="file-name" placeholder="Nesca"><br>
   
@@ -121,7 +118,6 @@
           <details class="dropdown-group">
             <summary class="dropdown-btn">Examples</summary>
             <a class="nesca-example" value="basic">Default</a>
-            <a class="nesca-example" value="tonal">Choice 2</a>
           </details>
 
         </fieldset>
@@ -129,41 +125,279 @@
     </section>
 
     <section>
-      <h2>Definition</h2>
+      <h2>Sound changes</h2>
       <div id="editor"></div>
       <script src="src/main.ts" type="module"></script>
     </section>
 
-    <section id="nesca-keyboard-table" style="display: none;">
+<section id="nesca-keyboard-table" style="display: none;">
       <h2>Keyboard</h2>
-      <table class="btns ipa-table" style="touch-action:pan-x pan-y;height:100%;">
-          <tr>
-            <td><button class="vowel ipa-button" title="near-open front unrounded vowel" value="&#x00E6;">&#x00E6;</button></td>
-            <td><button class="vowel ipa-button" title="near-open central (unrounded) vowel" value="&#x0250;">&#x0250;</button></td>
-            <td><button class="vowel ipa-button" title="open-mid back unrounded vowel" value="&#x028C;">&#x028C;</button></td>
-            <td><button class="vowel ipa-button" title="open back unrounded vowel" value="&#x0251;">&#x0251;</button></td>
-            <td><button class="vowel ipa-button" title="open back rounded vowel" value="&#x0252;">&#x0252;</button></td>
-            <td><button class="vowelX ipa-button" title="a with acute" value="&#x00E1;">&#x00E1;</button></td>
-            <td><button class="vowelX ipa-button" title="a with grave" value="&#x00E0;">&#x00E0;</button></td>
-            <td><button class="vowelX ipa-button" title="a with macron" value="&#x0101;">&#x0101;</button></td>
-            <td><button class="vowelX ipa-button" title="a with tilde" value="&#x00E3;">&#x00E3;</button></td>
-            <td><button class="vowelX ipa-button" title="a with ogonek" value="&#x0105;">&#x0105;</button></td>
-            <td><button class="vowelX ipa-button" title="a with underdot" value="&#x1EA1;">&#x1EA1;</button></td>
-            <td><button class="vowelX ipa-button" title="a with diaeresis" value="&#x00E4;">&#x00E4;</button></td>
-            <td><button class="vowelX ipa-button" title="a with ring" value="&#x00E5;">&#x00E5;</button></td>
-            <td><button class="cons ipa-button" title="voiced bilabial fricative" value="&#x03B2;">&#x03B2;</button></td>
-            <td><button class="cons ipa-button" title="voiced bilabial implosive" value="&#x0253;">&#x0253;</button></td>
-            <td><button class="cons ipa-button" title="voiceless palatal fricative" value="&#x00E7;">&#x00E7;</button></td>
-            <td><button class="cons ipa-button" title="voiceless alveolo-palatal fricative" value="&#x0255;">&#x0255;</button></td>
-            <td><button class="consN ipa-button" title="c with acute" value="&#x0107;">&#x0107;</button></td>
-            <td><button class="consN ipa-button" title="c with caron" value="&#x010D;">&#x010D;</button></td>
-            <td><button class="cons ipa-button" title="voiced dental fricative" value="&#x00F0;">&#x00F0;</button></td>
-            <td><button class="cons ipa-button" title="voiced retroflex plosive" value="&#x0256;">&#x0256;</button></td>
-            <td><button class="cons ipa-button" title="voiced alveolar implosive" value="&#x0257;">&#x0257;</button></td>
-            <td><button class="cons ipa-button" title="voiced retroflex implosive" value="&#x1D91;">&#x1D91;</button></td>
-            <td><button class="consN ipa-button" title="d with underdot" value="&#x1E0D;">&#x1E0D;</button></td>
-          </tr>
-      </table>
+      <div class="voc-ipa-table">
+          
+            <button class="vowel ipa-button" title="near-open front unrounded vowel" value="æ">æ</button>
+            <button class="vowel ipa-button" title="near-open central (unrounded) vowel" value="ɐ">ɐ</button>
+            <button class="vowel ipa-button" title="open-mid back unrounded vowel" value="ʌ">ʌ</button>
+            <button class="vowel ipa-button" title="open back unrounded vowel" value="ɑ">ɑ</button>
+            <button class="vowel ipa-button" title="open back rounded vowel" value="ɒ">ɒ</button>
+            <button class="vowelX ipa-button" title="a with acute" value="á">á</button>
+            <button class="vowelX ipa-button" title="a with grave" value="à">à</button>
+            <button class="vowelX ipa-button" title="a with macron" value="ā">ā</button>
+            <button class="vowelX ipa-button" title="a with tilde" value="ã">ã</button>
+            <button class="vowelX ipa-button" title="a with ogonek" value="ą">ą</button>
+            <button class="vowelX ipa-button" title="a with underdot" value="ạ">ạ</button>
+            <button class="vowelX ipa-button" title="a with diaeresis" value="ä">ä</button>
+            <button class="vowelX ipa-button" title="a with ring" value="å">å</button>
+            <button class="cons ipa-button" title="voiced bilabial fricative" value="β">β</button>
+            <button class="cons ipa-button" title="voiced bilabial implosive" value="ɓ">ɓ</button>
+            <button class="cons ipa-button" title="voiceless palatal fricative" value="ç">ç</button>
+            <button class="cons ipa-button" title="voiceless alveolo-palatal fricative" value="ɕ">ɕ</button>
+            <button class="consN ipa-button" title="c with acute" value="ć">ć</button>
+            <button class="consN ipa-button" title="c with caron" value="č">č</button>
+            <button class="cons ipa-button" title="voiced dental fricative" value="ð">ð</button>
+            <button class="cons ipa-button" title="voiced retroflex plosive" value="ɖ">ɖ</button>
+            <button class="cons ipa-button" title="voiced alveolar implosive" value="ɗ">ɗ</button>
+            <button class="cons ipa-button" title="voiced retroflex implosive" value="ᶑ">ᶑ</button>
+            <button class="consN ipa-button" title="d with underdot" value="ḍ">ḍ</button>
+          
+            <button class="consN ipa-button" title="d with stroke" value="đ">đ</button>
+            <button class="vowel ipa-button" title="open-mid front unrounded vowel" value="ɛ">ɛ</button>
+            <button class="vowel ipa-button" title="mid central (unrounded) vowel (schwa)" value="ə">ə</button>
+            <button class="vowel ipa-button" title="close-mid central unrounded vowel" value="ɘ">ɘ</button>
+            <button class="vowel ipa-button" title="open-mid central unrounded vowel" value="ɜ">ɜ</button>
+            <button class="vowelX ipa-button" title="e with acute" value="é">é</button>
+            <button class="vowelX ipa-button" title="e with grave" value="è">è</button>
+            <button class="vowelX ipa-button" title="e with macron" value="ē">ē</button>
+            <button class="vowelX ipa-button" title="e with tilde" value="ẽ">ẽ</button>
+            <button class="vowelX ipa-button" title="e with ogonek" value="ę">ę</button>
+            <button class="vowelX ipa-button" title="e with underdot" value="ẹ">ẹ</button>
+            <button class="vowelX ipa-button" title="e with diaeresis" value="ë">ë</button>
+            <button class="cons ipa-button" title="voiced velar implosive" value="ɠ">ɠ</button>
+            <button class="cons ipa-button" title="voiced uvular plosive" value="ɢ">ɢ</button>
+            <button class="cons ipa-button" title="voiced uvular implosive" value="ʛ">ʛ</button>
+            <button class="consN ipa-button" title="g with caron" value="ǧ">ǧ</button>
+            <button class="cons ipa-button" title="aspiration" value="ʰ">◌ʰ</button>
+            <button class="cons ipa-button" title="voiceless pharyngeal fricative" value="ħ">ħ</button>
+            <button class="cons ipa-button" title="voiced glottal fricative" value="ɦ">ɦ</button>
+            <button class="cons ipa-button" title="breathy voice" value="ʱ">◌ʱ</button>
+            <button class="cons ipa-button" title="voiceless epiglottal trill" value="ʜ">ʜ</button>
+            
+            <button class="consN ipa-button" title="h with underdot" value="ḥ">ḥ</button>
+            <button class="vowel ipa-button" title="near-close near-front unrounded vowel" value="ɪ">ɪ</button>
+            <button class="vowel ipa-button" title="close central unrounded vowel" value="ɨ">ɨ</button>
+          
+          
+            <button class="vowelX ipa-button" title="i with acute" value="í">í</button>
+            <button class="vowelX ipa-button" title="i with grave" value="ì">ì</button>
+            <button class="vowelX ipa-button" title="i with macron" value="ī">ī</button>
+            <button class="vowelX ipa-button" title="i with tilde" value="ĩ">ĩ</button>
+            <button class="vowelX ipa-button" title="i with ogonek" value="į">į</button>
+            <button class="vowelX ipa-button" title="dotless i" value="ı">ı</button>
+            <button class="vowelX ipa-button" title="i with diaeresis" value="ï">ï</button>
+            <button class="cons ipa-button" title="palatalized" value="ʲ">◌ʲ</button>
+            <button class="cons ipa-button" title="voiced palatal fricative" value="ʝ">ʝ</button>
+            <button class="cons ipa-button" title="voiced palatal plosive" value="ɟ">ɟ</button>
+            <button class="cons ipa-button" title="voiced palatal implosive" value="ʄ">ʄ</button>
+            <button class="cons ipa-button" title="velarized alveolar lateral approximant" value="ɫ">ɫ</button>
+            <button class="cons ipa-button" title="voiced alveolar lateral flap" value="ɺ">ɺ</button>
+            <button class="cons ipa-button" title="voiced retroflex lateral approximant" value="ɭ">ɭ</button>
+            <button class="cons ipa-button" title="voiceless alveolar lateral fricative" value="ɬ">ɬ</button>
+            <button class="cons ipa-button" title="voiced velar lateral approximant" value="ʟ">ʟ</button>
+            <button class="cons ipa-button" title="voiced alveolar lateral fricative" value="ɮ">ɮ</button>
+            <button class="consN ipa-button" title="barred l" value="ƛ">ƛ</button>
+            <button class="consN ipa-button" title="l with underdot" value="ḷ">ḷ</button>
+            <button class="consN ipa-button" title="l with stroke" value="ł">ł</button>
+            <button class="cons ipa-button" title="voiced bilabial nasal (superscript)" value="ᵐ">◌ᵐ</button>
+            <button class="cons ipa-button" title="voiced alveolar nasal (superscript)" value="ⁿ">◌ⁿ</button>
+            <button class="cons ipa-button" title="voiced retroflex nasal" value="ɳ">ɳ</button>
+            <button class="cons ipa-button" title="voiced retroflex nasal (superscript)" value="ᶯ">◌ᶯ</button>
+          
+
+          
+            <button class="cons ipa-button" title="voiced palatal nasal" value="ɲ">ɲ</button>
+            <button class="cons ipa-button" title="voiced palatal nasal (superscript)" value="ᶮ">◌ᶮ</button>
+            <button class="cons ipa-button" title="voiced velar nasal" value="ŋ">ŋ</button>
+            <button class="cons ipa-button" title="voiced velar nasal (superscript)" value="ᵑ">◌ᵑ</button>
+            <button class="cons ipa-button" title="voiced uvular nasal" value="ɴ">ɴ</button>
+            
+            <button class="cons ipa-button" title="voiced uvular nasal (superscript)" value="ᶰ">◌ᶰ</button>
+            <button class="consN ipa-button" title="n with caron" value="ň">ň</button>
+            <button class="consN ipa-button" title="n with tilde" value="ñ">ñ</button>
+            <button class="consN ipa-button" title="n with underdot" value="ṇ">ṇ</button>
+            <button class="consN ipa-button" title="n with acute" value="ń">ń</button>
+            <button class="vowel ipa-button" title="close-mid front rounded vowel" value="ø">ø</button>
+            <button class="vowel ipa-button" title="open-mid front rounded vowel" value="œ">œ</button>
+            <button class="vowel ipa-button" title="close-mid central rounded vowel" value="ɵ">ɵ</button>
+            <button class="vowel ipa-button" title="open-mid back rounded vowel" value="ɔ">ɔ</button>
+            <button class="vowelX ipa-button" title="o with acute" value="ó">ó</button>
+            <button class="vowelX ipa-button" title="o with grave" value="ò">ò</button>
+            <button class="vowelX ipa-button" title="o with macron" value="ō">ō</button>
+            <button class="vowelX ipa-button" title="o with tilde" value="õ">õ</button>
+            <button class="vowelX ipa-button" title="o with ogonek" value="ǫ">ǫ</button>
+            <button class="vowelX ipa-button" title="o with underdot" value="ọ">ọ</button>
+            <button class="vowelX ipa-button" title="o with diaeresis" value="ӧ">ӧ</button>
+            <button class="vowelX ipa-button" title="o with hook" value="ơ">ơ</button>
+            <button class="cons ipa-button" title="voiced alveolar tap" value="ɾ">ɾ</button>
+            <button class="cons ipa-button" title="voiced alveolar approximant" value="ɹ">ɹ</button>
+          
+
+          
+            <button class="cons ipa-button" title="voiced uvular fricative" value="ʁ">ʁ</button>
+            <button class="cons ipa-button" title="voiced uvular trill" value="ʀ">ʀ</button>
+            <button class="cons ipa-button" title="voiced retroflex approximant" value="ɻ">ɻ</button>
+            <button class="cons ipa-button" title="voiced retroflex flap" value="ɽ">ɽ</button>
+            <button class="consN ipa-button" title="r with caron" value="ř">ř</button>
+            <button class="consN ipa-button" title="r with underdot" value="ṛ">ṛ</button>
+            <button class="cons ipa-button" title="voiceless palatoalveolar fricative" value="ʃ">ʃ</button>
+            <button class="cons ipa-button" title="voiceless retroflex fricative" value="ʂ">ʂ</button>
+            <button class="consN ipa-button" title="s with caron" value="š">š</button>
+            <button class="consN ipa-button" title="s with underdot" value="ṡ">ṡ</button>
+            <button class="consN ipa-button" title="s with acute" value="ś">ś</button>
+
+            <button class="consN ipa-button" title="s with cedilla" value="ş">ş</button>
+
+            
+            <button class="cons ipa-button" title="voiceless retroflex plosive" value="ʈ">ʈ</button>
+            <button class="consN ipa-button" title="t with underdot" value="ṭ">ṭ</button>
+            <button class="consN ipa-button" title="t with stroke" value="ŧ">ŧ</button>
+            <button class="vowel ipa-button" title="near-close near-back rounded vowel" value="ʊ">ʊ</button>
+            <button class="vowel ipa-button" title="close central rounded vowel" value="ʉ">ʉ</button>
+            <button class="vowel ipa-button" title="close back unrounded vowel" value="ɯ">ɯ</button>
+            <button class="vowelX ipa-button" title="u with acute" value="ú">ú</button>
+            <button class="vowelX ipa-button" title="u with grave" value="ù">ù</button>
+            <button class="vowelX ipa-button" title="u with macron" value="ū">ū</button>
+            <button class="vowelX ipa-button" title="u with tilde" value="ũ">ũ</button>
+            <button class="vowelX ipa-button" title="u with ogonek" value="ų">ų</button>
+            <button class="vowelX ipa-button" title="u with diaeresis" value="ü">ü</button>
+            
+          
+
+          
+            <button class="vowelX ipa-button" title="u with hook" value="ư">ư</button>
+            <button class="cons ipa-button" title="voiced labiodental flap" value="ⱱ">ⱱ</button>
+            <button class="cons ipa-button" title="voiced labiodental approximant" value="ʋ">ʋ</button>
+            <button class="cons ipa-button" title="labialized" value="ʷ">◌ʷ</button>
+            <button class="cons ipa-button" title="voiced velar approximant" value="ɰ">ɰ</button>
+            <button class="cons ipa-button" title="voiceless labial-velar approximant" value="ʍ">ʍ</button>
+            <button class="cons ipa-button" title="voiceless uvular fricative" value="χ">χ</button>
+            <button class="vowel ipa-button" title="near-close near-front rounded vowel" value="ʏ">ʏ</button>
+            <button class="vowel ipa-button" title="close-mid back unrounded vowel" value="ɤ">ɤ</button>
+            <button class="vowelX ipa-button" title="y with acute" value="ý">ý</button>
+            <button class="vowelX ipa-button" title="y with grave" value="ỳ">ỳ</button>
+            <button class="vowelX ipa-button" title="y with macron" value="ȳ">ȳ</button>
+            <button class="vowelX ipa-button" title="y with tilde" value="ỹ">ỹ</button>
+            <button class="vowelX ipa-button" title="y with ogonek" value="y̨">y̨</button>
+            <button class="vowelX ipa-button" title="y with diaeresis" value="ÿ">ÿ</button>
+            <button class="cons ipa-button" title="voiced palatal lateral approximant" value="ʎ">ʎ</button>
+            <button class="cons ipa-button" title="voiced velar fricative" value="ɣ">ɣ</button>
+            <button class="cons ipa-button" title="velarized" value="ˠ">◌ˠ</button>
+            <button class="cons ipa-button" title="voiced labial-palatal approximant" value="ɥ">ɥ</button>
+            <button class="cons ipa-button" title="labial-palatalized" value="ᶣ">◌ᶣ</button>
+            <button class="cons ipa-button" title="voiced palatoalveolar fricative" value="ʒ">ʒ</button>
+            <button class="cons ipa-button" title="voiced retroflex fricative" value="ʐ">ʐ</button>
+            <button class="cons ipa-button" title="voiced alveolo-palatal fricative" value="ʑ">ʑ</button>
+            <button class="consN ipa-button" title="z with caron" value="ž">ž</button>
+            
+
+          
+
+          
+            <button class="consN ipa-button" title="z with underdot" value="ẓ">ẓ</button>
+            <button class="consN ipa-button" title="z with acute" value="ź">ź</button>
+            <button class="cons ipa-button" title="ejective" value="ʼ">◌ʼ</button>
+            <button class="consN ipa-button" title="ʻOkina" value="ʻ">ʻ</button>
+            <button class="consN ipa-button" title="Saltilo" value="ꞌ">ꞌ</button>
+            <button class="cons ipa-button" title="voiceless glottal plosive" value="ʔ">ʔ</button>
+            <button class="cons ipa-button" title="glottalized" value="ˀ">◌ˀ</button>
+            <button class="cons ipa-button" title="voiced epiglottal trill" value="ʢ">ʢ</button>
+            <button class="cons ipa-button" title="voiceless epiglottal plosive" value="ʡ">ʡ</button>
+            <button class="cons ipa-button" title="voiced pharyngeal fricative" value="ʕ">ʕ</button>
+            <button class="cons ipa-button" title="pharyngealized" value="ˤ">◌ˤ</button>
+            <button class="cons ipa-button" title="bilabial click" value="ʘ">ʘ</button>
+            <button class="cons ipa-button" title="dental click" value="ǀ">ǀ</button>
+            <button class="cons ipa-button" title="alveolar lateral click" value="ǁ">ǁ</button>
+            <button class="cons ipa-button" title="palatoalveolar click" value="ǂ">ǂ</button>
+            <button class="cons ipa-button" title="retroflex click" value="‼︎">‼︎</button>
+            <button class="cons ipa-button" title="voiceless bilabial fricative" value="ɸ">ɸ</button>
+            <button class="cons ipa-button" title="voiceless dental fricative" value="θ">θ</button>
+
+            <button class="consN ipa-button" title="thorn" value="þ">þ</button>
+            
+            <button class="consN ipa-button special-button" title="ellipsis" value="…">…</button>
+            <button class="consN ipa-button special-button" title="backtick" value="`">`</button>
+            <button class="consN ipa-button special-button" title="tilde" value="~">~</button>
+            <button class="consN ipa-button" title="zero (nonIPA)" value="∅">∅</button>
+            <button class="consN ipa-button" title="rightwards arrow (nonIPA)" value="→">→</button>
+            
+          
+
+          
+            <button class="consN ipa-button" title="superscript 1 (nonIPA)" value="¹">◌¹</button>
+            <button class="consN ipa-button" title="superscript 2 (nonIPA)" value="²">◌²</button>
+
+            <button class="cons ipa-button" title="primary stress" value="ˈ">ˈ◌</button>
+            <button class="cons ipa-button" title="secondary stress" value="ˌ">ˌ◌</button>
+            <button class="cons ipa-button" title="long" value="ː">◌ː</button>
+            <button class="cons ipa-button" title="half-long" value="ˑ">◌ˑ</button>
+            <button class="cons ipa-button" title="extra-short" value="̆">◌̆</button>
+            <button class="cons ipa-button" title="tie above" value="͡">◌͡◌</button>
+            <button class="cons ipa-button" title="tie below" value="͜">◌͜◌</button>
+
+            <button class="cons ipa-button" title="upstep" value="ꜛ">ꜛ</button>
+            <button class="cons ipa-button" title="downstep" value="ꜜ">ꜜ</button>
+            <button class="cons ipa-button" title="extra high tone" value="̋">◌̋</button>
+            <button class="cons ipa-button" title="high tone" value="́">◌́</button>
+            <button class="cons ipa-button" title="mid tone" value="̄">◌̄</button>
+            <button class="cons ipa-button" title="low tone" value="̀">◌̀</button>
+            <button class="cons ipa-button" title="extra low tone" value="̏">◌̏</button>
+            <button class="cons ipa-button" title="rising tone" value="̌">◌̌</button>
+            <button class="cons ipa-button" title="falling tone" value="̂">◌̂</button>
+            <button class="cons ipa-button" title="high rising tone" value="᷄">◌᷄</button>
+            <button class="cons ipa-button" title="low rising tone" value="᷆">◌᷆</button>
+            <button class="cons ipa-button" title="rising-falling tone" value="᷈">◌᷈</button>
+            
+            <button class="cons ipa-button" title="nasalized" value="̃">◌̃</button>
+            <button class="cons ipa-button" title="creaky voiced" value="̰">◌̰</button>
+
+            <button class="cons ipa-button" title="breathy voiced" value="̤">◌̤</button> 
+    
+    
+      <button class="cons ipa-button" title="centralized" value="̈">◌̈</button>
+      <button class="cons ipa-button" title="mid-centralized" value="̽">◌̽</button>
+
+      
+            
+      <button class="cons ipa-button" title="syllabic" value="̩">◌̩</button>
+      <button class="cons ipa-button" title="non-syllabic" value="̯">◌̯</button>
+
+      <button class="cons ipa-button" title="voiced" value="̬">◌̬</button>
+      <button class="cons ipa-button" title="voiceless" value="̥">◌̥</button>
+
+            <button class="cons ipa-button" title="advanced" value="̟">◌̟</button>
+            <button class="cons ipa-button" title="retracted" value="̠">◌̠</button>
+            <button class="cons ipa-button" title="raised" value="̝">◌̝</button>
+<button class="cons ipa-button" title="lowered" value="̞">◌̞</button>
+      
+      <button class="cons ipa-button" title="advanced tongue root" value="̘">◌̘</button>
+      <button class="cons ipa-button" title="retracted tongue root" value="̙">◌̙</button>
+      <button class="cons ipa-button" title="more rounded" value="̹">◌̹</button>
+      
+      
+      <button class="cons ipa-button" title="less rounded" value="̜">◌̜</button>
+      <button class="cons ipa-button" title="dental" value="̪">◌̪</button>
+      <button class="cons ipa-button" title="apical" value="̺">◌̺</button>
+      <button class="cons ipa-button" title="laminal" value="̻">◌̻</button>
+      <button class="cons ipa-button" title="linguolabial" value="̼">◌̼</button>
+      <button class="cons ipa-button" title="rhoticity" value="˞">◌˞</button>
+      <button class="cons ipa-button" title="no audible release" value="̚">◌̚</button>
+      <button class="cons ipa-button" title="tenseness" value="͈">◌͈</button>
+      <button class="cons ipa-button" title="weak articulation" value="͉">◌͉</button>
+      
+      
+      <button class="consN ipa-button" title="hook above" value="̉">◌̉</button>
+      <button class="consN ipa-button" title="comma above" value="̓">◌̓</button>
+
+    
+      </div>
     </section>
 
   </div>

@@ -14,10 +14,7 @@ i ix ^
 j -  +
 
 graphemes: x, a, b`;
-
-    } else if (example == "choice 2") {
-      choice = `; `;
-    }
+}
 
     if (choice == '' || choice == null || choice == undefined) {
         return '?';

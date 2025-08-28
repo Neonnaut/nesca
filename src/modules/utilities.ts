@@ -1,4 +1,16 @@
 
+const cappa = "[A-Z" +
+    // Latin acute
+    "\u00C1\u0106\u00C9\u01F4\u00CD\u1E30\u0139\u1E3E\u0143\u00D3\u1E54\u0154\u015A\u00DA\u1E82\u00DD\u0179" +
+    // Diaeresis
+    "\u00C4\u00CB\u1E26\u00CF\u00D6\u00DC\u1E84\u1E8C\u0178" +
+    // Caron
+    "\u01CD\u010C\u010E\u011A\u01E6\u021E\u01CF\u01E8\u013D\u0147\u01D1\u0158\u0160\u0164\u01D3\u017D" +
+    // Grave
+    "\u00C0\u00C8\u00CC\u01F8\u00D2\u00D9\u1E80\u1EF2" +
+    // Γ Δ Θ Λ Ξ Π Σ Φ Ψ Ω
+    "\u0393\u0394\u0398\u039B\u039E\u03A0\u03A3\u03A6\u03A8\u03A9]";
+
 // This thing fetches the last item of an array
 const get_last = <T = never>(arr: ArrayLike<T> | null | undefined) =>
   arr?.[arr.length - 1];
@@ -7,83 +19,70 @@ function capitalise(str: string): string {
     return str[0].toUpperCase() + str.slice(1);
 }
 
-const makePercentage = (input: string): number | null => {
+const make_percentage = (input: string): number | null => {
   const num = Number(input);
   return Number.isInteger(num) && num >= 1 && num <= 100 ? num : null;
 };
 
-function validateCatSegName(str: string): [boolean, boolean] {
-    const regex = /^[A-Z\u00C1\u0106\u00C9\u01F4\u00CD\u1E30\u0139\u1E3E\u0143\u00D3\u1E54\u0154\u015A\u00DA\u1E82\u00DD\u0179\u0393\u0394\u0398\u039B\u039E\u03A0\u03A3\u03A6\u03A8\u03A9]$|^\$[A-Z\u00C1\u0106\u00C9\u01F4\u00CD\u1E30\u0139\u1E3E\u0143\u00D3\u1E54\u0154\u015A\u00DA\u1E82\u00DD\u0179\u0393\u0394\u0398\u039B\u039E\u03A0\u03A3\u03A6\u03A8\u03A9]$/u;
-    const hasDollarSign = str.includes("$");
-
-    return [regex.test(str), hasDollarSign];
-}
-
-function validateSegment(str: string): boolean {
-  let insideSquare = false;
-  let insideParen = false;
-
-  // We don't want random space or comma inside segment
-
-  for (let i = 0; i < str.length; i++) {
-    const char = str[i];
-
-    if (char === "[") insideSquare = true;
-    else if (char === "]") insideSquare = false;
-
-    else if (char === "(") insideParen = true;
-    else if (char === ")") insideParen = false;
-
-    if ((char === "," || char === " ") && !insideSquare && !insideParen) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-
-function getCatSeg(input: string): [string, string, boolean, boolean, boolean] {
+function get_cat_seg_fea(input: string): [string, string, 'category'|'segment'|'feature'|'trash'] {
     const divider = "=";
   
     if (input === "") {
-        return ['', '', false, false, false]; // Handle invalid inputs
+        return ['', '', 'trash']; // Handle invalid inputs
     }
-
     const divided = input.split(divider);
     if (divided.length !== 2) {
-        return ['', '', false, false, false]; // Ensure division results in exactly two parts
+        return [input, '', 'trash']; // Ensure division results in exactly two parts
     }
-
-    const word = divided[0].trim();
+    const key = divided[0].trim();
     const field = divided[1].trim();
-    if (word === "" || field === "") {
-        return ['', '', false, false, false]; // Handle empty parts
+    if (key === "" || field === "") {
+        return [input, '', 'trash']; // Handle empty parts
     }
 
-    const [isValid, hasDollarSign] = validateCatSegName(word);
+    // Construct dynamic regexes using cappa
+    const categoryRegex = new RegExp(`^${cappa}$`);
+    const segmentRegex = new RegExp(`^\\$${cappa}$`);
+    const featureRegex = /^(\+|-|_)[a-z]+$/;
 
-    return [word, field, true, isValid, hasDollarSign]; // Return word, field, valid, isCapital, hasDollarSign
+    if (categoryRegex.test(key)) {
+        return [key, field, 'category'];
+    }
+    if (segmentRegex.test(key)) {
+        return [key, field, 'segment'];
+    }
+    if (featureRegex.test(key)) {
+        return [key, field, 'feature'];
+    }
+    return [input, '', 'trash'];
 }
 
-function valid_category_brackets(str: string): boolean {
-  const stack: string[] = [];
-  const bracketPairs: Record<string, string> = {
-    ']': '['
-  };
-  for (const char of str) {
-    if (Object.values(bracketPairs).includes(char)) {
-      stack.push(char); // Push opening brackets onto stack
-    } else if (Object.keys(bracketPairs).includes(char)) {
-      if (stack.length === 0 || stack.pop() !== bracketPairs[char]) {
-        return false; // Unmatched closing bracket
-      }
-    }
+function swap_first_last_items(array: any[]): any[] {
+  if (array.length >= 2) {
+    const firstItem = array[0];
+    const lastItemIndex = array.length - 1;
+    const lastItem = array[lastItemIndex];
+
+    array[0] = lastItem;
+    array[lastItemIndex] = firstItem;
   }
-  return stack.length === 0; // Stack should be empty if balanced
+  return array;
 }
+
+function final_sentence(items: string[]): string {
+  const len = items.length;
+
+  if (len === 0) return '';
+  if (len === 1) return items[0];
+
+  const allButLast = items.slice(0, len - 1).join(', ');
+  const last = items[len - 1];
+
+  return `${allButLast} and ${last}`;
+}
+
 
 export {
-  get_last, capitalise, makePercentage,
-  valid_category_brackets,
-  getCatSeg, validateSegment };
+  get_last, capitalise, make_percentage,
+  get_cat_seg_fea, cappa, swap_first_last_items, final_sentence
+};

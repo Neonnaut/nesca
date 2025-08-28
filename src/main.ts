@@ -63,9 +63,9 @@ $(window).on('load', function () {
 
     // Generate button
     document.getElementById("apply-button")?.addEventListener("click", function () {
-        const generateButton = this as HTMLButtonElement;
+        const applyButton = this as HTMLButtonElement;
         const outputMessage = document.getElementById('voc-output-message') as HTMLDivElement;
-        generateButton.disabled = true;
+        applyButton.disabled = true;
 
         try {
             w.postMessage({
@@ -75,12 +75,12 @@ $(window).on('load', function () {
                 word_divider: (document.getElementById('word-divider') as HTMLInputElement)?.value || ""
             });
             w.onerror = function (e: ErrorEvent) {
-                generateButton.disabled = false;
+                applyButton.disabled = false;
                 outputMessage.innerHTML = `<p class='error-message'>${e.message}</p>`;
             };
 
         } catch (e) {
-            generateButton.disabled = false;
+            applyButton.disabled = false;
             const error_message = e instanceof Error ? e.message : String(e);
             outputMessage.innerHTML = `<p class='error-message'>${error_message}</p>`;
         }
@@ -122,8 +122,7 @@ $(window).on('load', function () {
             }
         }
         if (e.data.diagnostic_messages.length != 0) {
-            for (const message of e.data.info_messages) {
-                output_message_html += `<p class='info-message'>${message}</p>`;
+            for (const message of e.data.diagnostic_messages) {
                 console.debug(message);
             }
         }
@@ -170,6 +169,12 @@ $(window).on('load', function () {
             setFilename('');
             clearResults();
         }
+    });
+
+    // Help button
+    const helpButton = document.getElementById("nesca-help") as HTMLButtonElement | null;
+    helpButton?.addEventListener("click", () => {
+        window.open('./nesca_docs.html', '_blank');
     });
 
     // Wrap lines checkbox
@@ -287,7 +292,7 @@ $(window).on('load', function () {
 });
 
 function clearResults(): void {
-    (document.getElementById('nesca-output-message') as HTMLInputElement).value = "";
+    (document.getElementById('voc-output-message') as HTMLDivElement).innerHTML = "";
     (document.getElementById('nesca-word-input') as HTMLInputElement).value = "";
     (document.getElementById('nesca-word-output') as HTMLInputElement).value = "";
 }

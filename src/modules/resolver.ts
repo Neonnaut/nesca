@@ -1,62 +1,75 @@
 import type Escape_Mapper from './escape_mapper';
 import Logger from './logger';
 
-import { getCatSeg,
-    // makePercentage,
- } from './utilities'
+import { get_cat_seg_fea } from './utilities'
+import type { Token, Apply_Mode } from './types';
 
 class Resolver {
-    public logger: Logger;
+    private logger: Logger;
     private escape_mapper: Escape_Mapper;
-    public mode: string;
 
+    public num_of_words: number;
+    public apply_mode: Apply_Mode;
+    public debug: boolean;
     public word_divider: string;
+    public input_word_divider: string;
 
-    public categories: Map<string, string>;
+    private category_pending: Map<string, { content:string, line_num:number }>;
+    public categories: Map<string, { graphemes:string[] }>;
 
-    public pre_transforms: {
-        target:string[], result:string[],
-        conditions:{ before:string, after:string }[], exceptions:{ before:string, after:string }[],
-        line_num:string
+    public feature_pending: Map<string, { content:string, line_num:number }>;
+    public features: Map<string, { graphemes:string[] }>;
+    
+    public transform_pending: {
+        target:string, result:string,
+        conditions:string[], exceptions:string[],
+        chance:(number|null),
+        line_num:number
     }[];
     public transforms: {
-        target:string[], result:string[],
-        conditions:{ before:string, after:string }[], exceptions:{ before:string, after:string }[],
-        line_num:string
+        target:Token[][], result:Token[][],
+        conditions:{ before:Token[], after:Token[] }[], exceptions:{ before:Token[], after:Token[] }[],
+        chance:(number|null),
+        line_num:number
     }[];
     public graphemes: string[];
 
     private file_line_num = 0;
 
-    public input_words: string[];
-
     constructor(
         logger: Logger,
         escape_mapper: Escape_Mapper,
-        mode: string,
+        apply_mode: Apply_Mode,
         word_divider: string
     ) {
         this.logger = logger;
         this.escape_mapper = escape_mapper;
 
-        this.mode = mode;
-        if (mode !== 'debug' && mode !== 'old-to-new') {
-            this.mode = 'word-list';
-        }
+        this.num_of_words = 0;
 
+        this.apply_mode = apply_mode;
+        this.debug = (apply_mode === 'debug');
         this.word_divider = word_divider === "" ? '\n' : word_divider;
+
         this.word_divider = this.word_divider.replace(new RegExp('\\\\n', 'g'), '\n');
+        this.input_word_divider = this.word_divider;
+
+        if (this.debug) {
+            this.word_divider = '\n';
+        }
         
+        this.category_pending = new Map;
         this.categories = new Map;
 
         this.graphemes = [];
-
-        this.input_words = [];
-
-        this.pre_transforms = [];
+        this.transform_pending = [];
         this.transforms = [];
+
+        this.feature_pending = new Map;
+        this.features = new Map;
     }
 
+    
     parse_file(file: string) {
 
         let transform_mode = false;
@@ -66,224 +79,273 @@ class Resolver {
             let line = file_array[this.file_line_num];
             let line_value = '';
 
-            line = this.escape_mapper.escapeBackslashSpace(line);
-            line = line.replace(/(?<!\\);.*/u, '').trim(); // Remove comment unless escaped with backslash
+            line = this.escape_mapper.escape_backslash_pairs(line);
+            line = line.replace(/;.*/u, '').trim(); // Remove comment!!
+            line = this.escape_mapper.escape_named_escape(line);
 
             if (line === '') { continue; } // Blank line !!
 
             if (transform_mode) { // Lets do transforms !!
                 line_value = line;
 
-                if (line_value.startsWith("END")) {
+                if (line_value === "END") {
                     transform_mode = false;
                     continue;
                 }
                 
                 if (line.startsWith("% ")) { // Parse clusters
-                    this.parse_cluster(file_array);
+                    this.parse_clusterfield(file_array);
+                    continue;
+                }
+
+                if (line.startsWith("| ")) { // Engine
+                    line_value = line.substring(2).trim().toLowerCase();
+
+                    line_value = line_value.replace(/\bcapitalize\b/g, 'capitalise')
+
+                    for (const engine of line_value.split(/\s+/)) {
+                        if (engine == "decompose"||engine == "compose" ||
+                            engine == "capitalise" || engine == "decapitalise" ||
+                            engine == "to-upper-case" || engine == "to-lower-case" ||
+                            engine == "xsampa-to-ipa" || engine == "ipa-to-xsampa"
+                        ) {
+                            this.add_transform(
+                                `|${engine}`, '\\', [], [], null, this.file_line_num
+                            )
+                        } else {
+                            this.logger.validation_error(
+                                `Trash engine '${this.escape_mapper.restore_preserve_escaped_chars(engine)}' found`,
+                                this.file_line_num
+                            );
+                        }
+                    }
                     continue;
                 }
                 
-                let [target, result, conditions, exceptions] = this.GetTransform(line_value);
+                let [target, result, conditions, exceptions, chance] = this.get_transform(line_value);
 
-                this.add_transform(target, result, conditions, exceptions, `${this.file_line_num + 1}`);
+                this.add_transform(target, result, conditions, exceptions, chance, this.file_line_num);
                 continue;
             }
 
-            if (line.startsWith("BEGIN transform:")) {
+            if (line === "BEGIN transform:") {
                 transform_mode = true;
 
             } else if (line.startsWith("graphemes:")) {
                 line_value = line.substring(10).trim();
-                line_value = this.escape_mapper.escapeBackslashPairs(line_value);
 
                 let graphemes = line_value.split(/[,\s]+/).filter(Boolean);
+                for (let i = 0; i < graphemes.length; i++) {
+                    graphemes[i] = this.escape_mapper.restore_escaped_chars(graphemes[i]);
+                }
                 if (graphemes.length == 0){
-                    this.logger.warn(`\`graphemes\` was introduced but there were no graphemes listed at ${this.file_line_num + 1} -- expected a list of graphemes`);
+                    this.logger.warn(`'graphemes' was introduced but there were no graphemes listed -- expected a list of graphemes`, this.file_line_num);
                 }
                 this.graphemes = graphemes;
 
-            } else { // It's a category
+            } else if (line.startsWith("+- ")) {
+                this.parse_featurefield(file_array);
+                continue;
+            } else { // It's a category or segment or feature
                 line_value = line;
-                line_value = this.escape_mapper.escapeBackslashPairs(line_value);
 
-                let [myName, field, valid, isCapital, hasDollarSign] = getCatSeg(line_value);
-
-                if ( !valid || !isCapital ) {
-                    this.logger.warn(`Junk ignored at line ${this.file_line_num + 1} -- expected a category, segment, directive, ..., etc`);
+                const [key, field, mode] = get_cat_seg_fea(line_value);
+                if (mode === "trash" || mode === "segment") {
+                    this.logger.warn(`Junk ignored -- expected a category, segment, directive, ..., etc`, this.file_line_num);
                     continue;
                 }
-                if (hasDollarSign) {
-                   
-                } else {
+                if (mode === 'category') {
                     // CATEGORIES !!!
-                    this.categories.set(myName, field);
-                }
-            }
-        }
-    }
-    
-    // CATEGORIES !!!
-    expand_categories() {
-        for (const [key, value] of this.categories) {
-            this.categories.set( key, this.recursiveExpansion(value, this.categories, false) );
-        }
-    }
-
-    recursiveExpansion(
-        input: string,
-        mappings: Map<string, string>,
-        encloseInBrackets: boolean = false
-    ): string {
-        const mappingKeys = [...mappings.keys()].sort((a, b) => b.length - a.length);
-
-        const resolveMapping = (str: string, history: string[] = []): string => {
-            let result = '', i = 0;
-
-            while (i < str.length) {
-                let matched = false;
-
-                for (const key of mappingKeys) {
-                    if (str.startsWith(key, i)) {
-                        if (history.includes(key)) {
-                            this.logger.warn(`A cycle was detected when mapping "${key}"`);
-                            result += '🔃';
-                        } else {
-                            let resolved = resolveMapping(mappings.get(key) || '', [...history, key]);
-                            result += encloseInBrackets ? `[${resolved}]` : resolved;
-                        }
-                        i += key.length;
-                        matched = true;
-                        break;
+                    this.category_pending.set(key, { content:field, line_num:this.file_line_num });
+                } else if (mode === 'feature') {
+                    // FEATURES !!!
+                    const graphemes = field.split(/[,\s]+/).filter(Boolean);
+                    if (graphemes.length == 0) {
+                        this.logger.validation_error(`Feature ${key} had no graphemes`, this.file_line_num);
                     }
+
+                    this.feature_pending.set(key, { content:graphemes.join(","), line_num:this.file_line_num });
                 }
-                if (!matched) result += str[i++];
             }
-            return result;
-        };
-        return resolveMapping(input);
+        }
     }
 
     // TRANSFORMS !!!
 
+
     // This is run on parsing file. We then have to run resolve_transforms aftter parse file
-    GetTransform(input: string): [
-    string[], string[],
-    { before: string; after: string }[],
-    { before: string; after: string }[]
-        ] {
+    get_transform(input: string): [
+        string, string,
+        string[],
+        string[],
+        (number|null)
+    ] {
         if (input === "") {
-            throw new Error("No input");
+            this.logger.validation_error(`No input`, this.file_line_num)
         }
 
-        const divided = input.split(/->|>|→/);
+        input = input.replace(/\/\//g, '!'); // Replace '//' with '!'
+        const divided = input.split(/>|->|→|=>|⇒/);
         if (divided.length === 1) {
-            throw new Error(`No arrows in transform at line ${this.file_line_num + 1}`);
+            this.logger.validation_error(`No arrows in transform`, this.file_line_num)
         }
         if (divided.length !== 2) {
-            throw new Error(`Too many arrows in transform at line ${this.file_line_num + 1}`);
+            this.logger.validation_error(`Too many arrows in transform`, this.file_line_num);
         }
 
         const target = divided[0].trim();
         if (target === "") {
-            throw new Error(`Target is empty in transform at line ${this.file_line_num + 1}`);
+            this.logger.validation_error(`Target is empty in transform`, this.file_line_num);
         }
         if (!this.valid_transform_brackets(target)) {
-            throw new Error("Target had missmatched brackets at line " + (this.file_line_num + 1));
+            this.logger.validation_error(`Target had missmatched brackets`, this.file_line_num);
         }
-        const target_array = this.set_concurrent_changes(target);
 
-        const slashIndex = divided[1].indexOf('/');
-        const bangIndex = divided[1].indexOf('!');
+        const slash_index = divided[1].indexOf('/');
+        const bang_index = divided[1].indexOf('!');
+        const question_index = divided[1].indexOf('?');
 
-        const delimiterIndex = Math.min(
-            slashIndex === -1 ? Infinity : slashIndex,
-            bangIndex === -1 ? Infinity : bangIndex
+        const delimiter_index = Math.min(
+            slash_index === -1 ? Infinity : slash_index,
+            bang_index === -1 ? Infinity : bang_index,
+            question_index === -1 ? Infinity : question_index
         );
 
-        const result = delimiterIndex === Infinity
+        const result = delimiter_index === Infinity
             ? divided[1].trim()
-            : divided[1].slice(0, delimiterIndex).trim();
+            : divided[1].slice(0, delimiter_index).trim();
 
         if (result == "") {
-            throw new Error(`Result is empty in transform at line ${this.file_line_num + 1}`);
+            this.logger.validation_error(`Result is empty in transform`, this.file_line_num);
         }
         if (!this.valid_transform_brackets(result)) {
-            throw new Error("Result had missmatched brackets at line " + (this.file_line_num + 1));
-        }
-        const result_array = this.set_concurrent_changes(result);
-
-        // If result array is not the same as target array send error
-        if (target_array.length !== result_array.length) {
-            throw new Error(`Target and result concurrent changes have different lengths at line ${this.file_line_num + 1}`);
+            this.logger.validation_error(`Result had missmatched brackets`, this.file_line_num);
         }
 
-        const environment = delimiterIndex === Infinity
+        const environment = delimiter_index === Infinity
             ? ''
-            : divided[1].slice(delimiterIndex).trim();
+            : divided[1].slice(delimiter_index).trim();
 
-        const conditions: { before: string; after: string }[] = [];
-        const exceptions: { before: string; after: string }[] = [];
+        const { conditions, exceptions, chance } = this.get_environment(environment);
 
-        const blocks = environment.split('/').map(s => s.trim()).filter(Boolean);
-
-        for (const block of blocks) {
-            const segments = block.split('!').map(s => s.trim()).filter(Boolean);
-
-            for (let i = 0; i < segments.length; i++) {
-                const kind = i === 0 ? 'condition' : 'exception';
-                const validated = this.validateContext(segments[i], kind);
-                if (kind === 'condition') {
-                    conditions.push(validated);
-                } else {
-                    exceptions.push(validated);
-                }
-            }
-        }
-        return [target_array, result_array, conditions, exceptions];
+        return [target, result, conditions, exceptions, chance];
     }
 
-    validateContext(segment: string, kind: 'condition' | 'exception'): { before: string; after: string } {
+    get_environment(environment_string: string): {
+        conditions: string[];
+        exceptions: string[];
+        chance: number | null;
+    } {
+        const conditions: string[] = [];
+        const exceptions: string[] = [];
+        let chance: number | null = null;
+
+        let buffer = "";
+        let mode: "condition" | "exception" | "chance" = "condition";
+
+        for (let i = 0; i < environment_string.length; i++) {
+            const ch = environment_string[i];
+
+            if (ch === '/') {
+                if (buffer.trim()) {
+                    const validated = this.validate_environment(buffer.trim(), mode);
+                    (mode === "condition" ? conditions : exceptions).push(validated);
+                }
+                buffer = "";
+                mode = "condition";
+            } else if (ch === '!') {
+                if (buffer.trim()) {
+                    const validated = this.validate_environment(buffer.trim(), mode);
+                    (mode === "condition" ? conditions : exceptions).push(validated);
+                }
+                buffer = "";
+                mode = "exception";
+            } else if (ch === '?') {
+                if (buffer.trim()) {
+                    const validated = this.validate_environment(buffer.trim(), mode);
+                    (mode === "condition" ? conditions : exceptions).push(validated);
+                }
+                buffer = "";
+                mode = "chance";
+            } else {
+                buffer += ch;
+            }
+        }
+
+        if (buffer.trim()) {
+            const segment = buffer.trim();
+            if (mode === "chance") {
+                const parsed = parseInt(segment, 10);
+                if ( chance != null) {
+                    this.logger.validation_error(`Duplicate chance value '${segment}'`, this.file_line_num);
+                }
+                if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
+                    chance = parsed;
+                } else {
+                    this.logger.validation_error(`Chance value "${segment}" must be between 0 and 100`, this.file_line_num);
+                }
+            } else {
+                const validated = this.validate_environment(segment, mode);
+                (mode === "condition" ? conditions : exceptions).push(validated);
+            }
+        }
+
+        return {
+            conditions: conditions,
+            exceptions: exceptions,
+            chance: chance
+        };
+    }
+
+    validate_environment(segment: string, kind: 'condition' | 'exception' | 'chance'): string {
+        if (kind === 'chance') {
+            const parsed = parseInt(segment, 10);
+            if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
+                return segment;
+            } else {
+                this.logger.validation_error(`Chance "${segment}" must be a number between 0 and 100`, this.file_line_num);
+            }
+        }
+
         const parts = segment.split('_');
         if (parts.length !== 2) {
-            throw new Error(`${kind} "${segment}" must contain exactly one underscore`);
+            this.logger.validation_error(`${kind} "${segment}" must contain exactly one underscore`, this.file_line_num);
         }
 
         const [before, after] = parts;
         if (!before && !after) {
-            throw new Error(`${kind} "${segment}" must have content on at least one side of '_'`);
+            this.logger.validation_error(`${kind} "${segment}" must have content on at least one side of '_'`, this.file_line_num);
         }
 
-        return {
-            before: before || '',
-            after: after || ''
-        };
+        return `${before}_${after}`;
     }
 
-    add_transform(target:string[], result:string[], 
-        conditions:{ before:string, after:string }[],
-        exceptions:{ before:string, after:string }[],
-        line_num:string) {
-        this.pre_transforms.push( { target:target, result:result,
+    add_transform(target:string, result:string, 
+        conditions:string[],
+        exceptions:string[],
+        chance:(number|null),
+        line_num:number) {
+        this.transform_pending.push( { target:target, result:result,
             conditions:conditions, exceptions:exceptions,
+            chance:chance,
             line_num:line_num} );
     }
 
     set_concurrent_changes(target_result:string) {
         let result = [];
         let buffer = "";
-        let insideBrackets = 0;
+        let inside_brackets = 0;
 
         for (let i = 0; i < target_result.length; i++) {
             const char = target_result[i];
 
             if (char === '[' || char === '(') {
-                insideBrackets++;
+                inside_brackets++;
             } else if (char === ']' || char === ')') {
-                insideBrackets--;
+                inside_brackets--;
             }
 
-            if ((char === ' ' || char === ',') && insideBrackets === 0) {
+            if ((char === ' ' || char === ',') && inside_brackets === 0) {
                 if (buffer.length > 0) {
                     result.push(buffer);
                     buffer = "";
@@ -300,11 +362,13 @@ class Resolver {
         return result;
     }
 
-
-
-    private parse_cluster(file_array:string[]) {
+    private parse_clusterfield(file_array:string[]) {
         let line = file_array[this.file_line_num];
+
+        line = this.escape_mapper.escape_backslash_pairs(line);
         line = line.replace(/;.*/u, '').trim(); // Remove comment!!
+        line = this.escape_mapper.escape_named_escape(line);
+
         if (line === '') { return; } // Blank line. End clusterfield... early !!
         let top_row = line.split(/[,\s]+/).filter(Boolean);
         top_row.shift();
@@ -314,19 +378,33 @@ class Resolver {
         let concurrent_target: string[] = [];
         let concurrent_result: string[] = [];
 
+        let my_conditions: string[] = [];
+        let my_exceptions: string[] = [];
+
         for (; this.file_line_num < file_array.length; ++this.file_line_num) {
             let line = file_array[this.file_line_num];
+            
+            line = this.escape_mapper.escape_backslash_pairs(line);
             line = line.replace(/;.*/u, '').trim(); // Remove comment!!
+            line = this.escape_mapper.escape_named_escape(line);
+
             if (line === '') { break} // Blank line. End clusterfield !!
+
+            if (line.startsWith('/') || line.startsWith('!')) {
+                const { conditions, exceptions } = this.get_environment(line);
+                my_conditions.push(...conditions);
+                my_exceptions.push(...exceptions);
+                continue
+            }
 
             let row = line.split(/[,\s]+/).filter(Boolean);
             let column = row[0];
             row.shift();
 
             if (row.length > row_length) {
-                throw new Error(`Clusterfield row too long at line number ${this.file_line_num + 1}`);
+                this.logger.validation_error(`Cluster-field row too long`, this.file_line_num);
             } else if (row.length < row_length) {
-                throw new Error(`Clusterfield row too short at line number ${this.file_line_num + 1}`);
+                this.logger.validation_error(`Cluster-field row too short`, this.file_line_num);
             }
 
             for (let i = 0; i < row_length; ++i) {
@@ -341,61 +419,90 @@ class Resolver {
                 }
             }
         }
-        this.add_transform(concurrent_target, concurrent_result, 
-            [], [], `${this.file_line_num + 1}`);
+        this.add_transform(concurrent_target.join(','), concurrent_result.join(','), 
+            my_conditions, my_exceptions, null, this.file_line_num);
     }
 
-    resolve_transforms() {
-         // Resolve brackets, put categories in transforms etc.
-        
-        let transforms = [];
-        for (let i = 0; i < this.pre_transforms.length; i++) {
-            let line_num = this.pre_transforms[i].line_num;
+    private parse_featurefield(file_array:string[]) {
+        let line = file_array[this.file_line_num];
 
-            let target = this.pre_transforms[i].target;
+        line = this.escape_mapper.escape_backslash_pairs(line);
+        line = line.replace(/;.*/u, '').trim(); // Remove comment!!
+        line = this.escape_mapper.escape_named_escape(line);
 
-            let result = this.pre_transforms[i].result;
+        if (line === '') { return; } // Blank line. End clusterfield... early !!
+        let top_row = line.split(/[,\s]+/).filter(Boolean);
+        top_row.shift(); // Erase +-
+        const row_length = top_row.length;
+        this.file_line_num ++;
 
-            let exceptions = [];
-            for (let j = 0; j < this.pre_transforms[i].exceptions.length; j++) {
-                let exception_before = this.pre_transforms[i].exceptions[j].before
-                let exception_after = this.pre_transforms[i].exceptions[j].after;
+        for (; this.file_line_num < file_array.length; ++this.file_line_num) {
+            let line = file_array[this.file_line_num];
+            
+            line = this.escape_mapper.escape_backslash_pairs(line);
+            line = line.replace(/;.*/u, '').trim(); // Remove comment!!
+            line = this.escape_mapper.escape_named_escape(line);
 
-                exceptions.push({ before:exception_before, after:exception_after });
+            if (line === '') { break} // Blank line. End clusterfield !!
+
+            let row = line.split(/[,\s]+/).filter(Boolean);
+            let column = row[0];
+            row.shift();
+
+            const featureRegex = /^[a-z]+$/;
+
+            if (!featureRegex.test(column)) {
+                this.logger.validation_error(`A feature in a feature-field must be of lowercase letters only.`, this.file_line_num)
             }
 
-            let conditions = [];
-            for (let j = 0; j < this.pre_transforms[i].conditions.length    ; j++) {
-                let condition_before = this.pre_transforms[i].conditions[j].before
-                let condition_after = this.pre_transforms[i].conditions[j].after;
-
-                conditions.push({ before:condition_before, after:condition_after });
+            if (row.length > row_length) {
+                this.logger.validation_error(`Feature-field row too long`, this.file_line_num);
+            } else if (row.length < row_length) {
+                this.logger.validation_error(`Feature-field row too short`, this.file_line_num);
             }
-            transforms.push({
-                target: target, result: result,
-                conditions: conditions, exceptions: exceptions,
-                line_num: line_num
-            });
+
+            let my_pro_graphemes:string[] = [];
+            let my_anti_graphemes:string[] = [];
+
+            for (let i = 0; i < row_length; ++i) {
+                if (row[i] === '.') {
+                    continue;
+                } else if ( row[i] === "+") {
+                    my_pro_graphemes.push(top_row[i])
+                } else if (row[i] === '-') {
+                    my_anti_graphemes.push(top_row[i])
+                }
+            }
+            if (my_pro_graphemes.length > 0 ) {
+                this.feature_pending.set(`+${column}`, {content:my_pro_graphemes.join(","), line_num:this.file_line_num})
+            }
+            if (my_anti_graphemes.length > 0 ) {
+                this.feature_pending.set(`-${column}`, {content:my_anti_graphemes.join(","), line_num:this.file_line_num})
+            }
         }
-        this.transforms = transforms;
     }
 
-    //private parse_target_result(target, result): [string[],string[]] {
-
-    //}
-
+    set_transforms(resolved_transforms: {  // From resolve_transforms !!
+        target:Token[][], result:Token[][],
+        conditions:{ before:Token[], after:Token[] }[], exceptions:{ before:Token[], after:Token[] }[],
+        chance:(number|null),
+        line_num:number
+    }[]) {
+        this.transforms = resolved_transforms;
+    }
+    
     valid_transform_brackets(str: string): boolean {
         const stack: string[] = [];
-        const bracketPairs: Record<string, string> = {
+        const bracket_pairs: Record<string, string> = {
             ')': '(',
             '}': '{',
             ']': '[',
         };
         for (const char of str) {
-            if (Object.values(bracketPairs).includes(char)) {
+            if (Object.values(bracket_pairs).includes(char)) {
             stack.push(char); // Push opening brackets onto stack
-            } else if (Object.keys(bracketPairs).includes(char)) {
-            if (stack.length === 0 || stack.pop() !== bracketPairs[char]) {
+            } else if (Object.keys(bracket_pairs).includes(char)) {
+            if (stack.length === 0 || stack.pop() !== bracket_pairs[char]) {
                 return false; // Unmatched closing bracket
             }
             }
@@ -403,44 +510,173 @@ class Resolver {
         return stack.length === 0; // Stack should be empty if balanced
     }
 
+    resolve_categories() {
+        // Expand categories
+        for (const [key, value] of this.category_pending.entries()) {
+            const expanded_content = this.recursive_expansion(value.content, this.category_pending);
+            this.category_pending.set(key, {
+                content: expanded_content,
+                line_num: value.line_num, // Preserve original line_num
+            });
+        }
+
+        // Resolve categories
+        for (const [key, value] of this.category_pending) {
+            const new_category_field:string[] = value.content.split(/[,\s]+/).filter(Boolean);
+            this.categories.set(key, { graphemes:new_category_field} ); ////
+        }
+    }
+
+    resolve_features() {
+        for (const [key, value] of this.feature_pending) {
+            const expanded_content = this.recursive_expansion(value.content, this.feature_pending);
+            const unique_graphemes = Array.from(new Set(expanded_content.split(",")));
+
+            if (key.startsWith('_')) {
+                if (this.graphemes.length === 0) {
+                    this.logger.validation_error(`Para-feature '${key}' exists, but the 'graphemes:' directive was not used`, value.line_num);
+                }
+                const anti_graphemes = this.graphemes.filter(item => !unique_graphemes.includes(item));
+                const anti_key = key.replace(/^./, "-");
+                const pro_key = key.replace(/^./, "+");
+
+                this.features.set(anti_key, { graphemes:anti_graphemes });
+                this.features.set(pro_key, { graphemes:unique_graphemes });
+            } else {
+                this.features.set(key, { graphemes:unique_graphemes });
+            }
+        }
+    }
+
+    recursive_expansion(
+        input: string,
+        mappings: Map<string, { content: string, line_num: number }>,
+        enclose_in_brackets: boolean = false
+    ): string {
+        const mappingKeys = [...mappings.keys()].sort((a, b) => b.length - a.length);
+
+        const resolve_mapping = (str: string, history: string[] = []): string => {
+            let result = '', i = 0;
+
+            while (i < str.length) {
+                let matched = false;
+
+                for (const key of mappingKeys) {
+                    const entry = mappings.get(key)!;
+
+                    if (str.startsWith(key, i)) {
+                        if (history.includes(key)) {
+                            this.logger.warn(`A cycle was detected when mapping '${key}'`, entry.line_num);
+                            result += '�';
+                        } else {
+                            const entry = mappings.get(key);
+                            const resolved = resolve_mapping(entry?.content || '', [...history, key]);
+                            result += enclose_in_brackets ? `[${resolved}]` : resolved;
+                        }
+                        i += key.length;
+                        matched = true;
+                        break;
+                    }
+                }
+
+                if (!matched) result += str[i++];
+            }
+
+            return result;
+        };
+
+        return resolve_mapping(input);
+    }
+
+    format_tokens(seq: Token[]): string {
+        // Formatting for making the record
+        return seq.map(t => {
+            let s = t.base;
+
+            if (t.type === "anythings-mark") {
+                if ('blocked_by' in t && t.blocked_by) {
+                    s+= `{${t.blocked_by.join(", ")}}`
+                }
+            }
+
+            if ('escaped' in t && t.escaped) {
+                s = '\\' + s;
+            }
+            if ('min' in t && t.min === 1 && t.max === Infinity) {
+                s += `+`;
+            } else if ('min' in t  && t.max === Infinity) {
+                s += `+{${t.min},}`;
+            } else if ('min' in t && t.min == t.max) {
+                if (t.min == 1){
+                    // min 1 and max 1
+                } else {
+                    s += `+{${t.min}}`;
+                }
+            } else if ('min' in t) {
+                s += `+{${t.min}${t.max !== Infinity ? ',' + t.max : ''}}`;
+            }
+            return s;
+        }).join('');
+    }
 
     create_record(): void {
         let categories = [];
         for (const [key, value] of this.categories) {
-            let catField:string[] = [];
-
-            catField.push(`${value}`);
-
-            const category_field:string = `${catField.join(', ')}`;
+            let cat_field:string[] = [];
+            for (let i = 0; i < value.graphemes.length; i++) {
+                cat_field.push(`${value.graphemes[i]}`);
+            }
+            const category_field:string = `${cat_field.join(', ')}`;
 
             categories.push(`  ${key} = ${category_field}`);
         }
 
         let transforms = [];
         for (let i = 0; i < this.transforms.length; i++) {
+            const my_transform = this.transforms[i];
+
+            let my_target = [];
+            for (let j = 0; j < my_transform.target.length; j++) {
+                my_target.push(this.format_tokens(my_transform.target[j]));
+            }
+            let my_result = [];
+            for (let j = 0; j < my_transform.result.length; j++) {
+                my_result.push(this.format_tokens(my_transform.result[j]));
+            }
+
+            let chance = my_transform.chance ? ` ? ${my_transform.chance}` : '';
             let exceptions = '';
-            for (let j = 0; j < this.transforms[i].exceptions.length; j++) {
-                exceptions += ` ! ${this.transforms[i].exceptions[j].before}_${this.transforms[i].exceptions[j].after}`;
+            for (let j = 0; j < my_transform.exceptions.length; j++) {
+                exceptions += ` ! ${this.format_tokens(my_transform.exceptions[j].before)}_${this.format_tokens(my_transform.exceptions[j].after)}`;
             }
             let conditions = '';
-            for (let j = 0; j < this.transforms[i].conditions.length    ; j++) {
-                conditions += ` / ${this.transforms[i].conditions[j].before}_${this.transforms[i].conditions[j].after}`;
-            }   
-            transforms.push(`  ${this.transforms[i].target.join(", ")} → ${this.transforms[i].result.join(", ")} ${conditions} ${exceptions}`);
+            for (let j = 0; j < my_transform.conditions.length    ; j++) {
+                conditions += ` / ${this.format_tokens(my_transform.conditions[j].before)}_${this.format_tokens(my_transform.conditions[j].after)}`;
+            }
+
+            transforms.push(`  ⟨${my_target.join(", ")} → ${my_result.join(", ")}${conditions}${exceptions}${chance}⟩:${my_transform.line_num}`);
+        }
+
+        let features = [];
+        for (const [key, value] of this.features) {
+            features.push(`  ${key} = ${value.graphemes.join(', ')}`);
         }
 
         let info:string =
             `~ OPTIONS ~\n` +
-            `Mode: ` + this.mode + 
+            `Num of words: ` + this.num_of_words + 
+            `\nMode: ` + this.apply_mode +
             `\nWord divider: "` + this.word_divider + `"` +
 
             `\n\n~ FILE ~` +
             `\nCategories {\n` + categories.join('\n') + `\n}` +
+
+            `\nFeatures {\n` + features.join('\n') + `\n}` +
+
             `\nTransforms {\n` + transforms.join('\n') + `\n}` +
             `\nGraphemes: ` + this.graphemes.join(', ');
-        info = this.escape_mapper.restorePreserveEscapedChars(info);
 
-        this.logger.info(info);
+        this.logger.diagnostic(info);
     }
 }
 

@@ -1,12 +1,12 @@
-import gen_words from './modules/core';
+import apply from './modules/core';
 
 onmessage = function (event) {
-    const nesca = gen_words(
-        event.data.file,
-        event.data.input_words,
-        event.data.mode,
-        event.data.word_divider
-    );
+    const nesca = apply({
+        file: event.data.file,
+        input_words: event.data.input_words,
+        apply_mode: event.data.mode,
+        word_divider: event.data.word_divider
+    });
 
     postMessage({
         words: nesca.text,
