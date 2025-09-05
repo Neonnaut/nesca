@@ -1,7 +1,8 @@
 import { get_last } from './utilities'
+import { Output_Mode } from './types'
 
 class Word {
-    static apply_mode: string = 'word-list';
+    static output_mode: Output_Mode = 'word-list';
 
     transformations: (string|null)[];
     forms: string[];
@@ -26,7 +27,7 @@ class Word {
     get_word(): string { // Use this when creating the text
         let output: string | undefined = '';
 
-        if (Word.apply_mode == 'debug') {
+        if (Word.output_mode == 'debug') {
             for (let i = 0; i < this.forms.length; i++) {
                 if (this.transformations[i]) {
                     output += `⟨${this.transformations[i]}⟩${this.line_nums[i]} ➤ ⟨${this.forms[i]}⟩\n`;
@@ -36,7 +37,7 @@ class Word {
             }
             return output;
         }
-        if (Word.apply_mode == 'old-to-new') {
+        if (Word.output_mode == 'old-to-new') {
             output = `${this.forms[0]} => ${get_last(this.forms)}`;
             return output;
         }

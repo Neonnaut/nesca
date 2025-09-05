@@ -1,3 +1,4 @@
+// @ts-ignore
 import MyWorker from './worker?worker';
 
 import { examples } from './examples.ts';
@@ -31,8 +32,11 @@ function create_file_editor() {
         setFilename(filename);
     }
 
-    if (input_words) {
+    if (input_words || input_words !== '') {
         (document.getElementById('nesca-word-input') as HTMLTextAreaElement).value = input_words;
+    } else {
+        (document.getElementById('nesca-word-input') as HTMLTextAreaElement).value =
+        'bade\nbate\nkito\nsiəmuso\nnesca\nʔa'
     }
 
     // Create file editor
@@ -167,7 +171,7 @@ window.addEventListener("load", () => {
                 }
             });
             setFilename('');
-            clearResults();
+            clearAll();
         }
     });
 
@@ -292,6 +296,11 @@ window.addEventListener("load", () => {
 });
 
 function clearResults(): void {
+    (document.getElementById('voc-output-message') as HTMLDivElement).innerHTML = "";
+    (document.getElementById('nesca-word-output') as HTMLInputElement).value = "";
+}
+
+function clearAll(): void {
     (document.getElementById('voc-output-message') as HTMLDivElement).innerHTML = "";
     (document.getElementById('nesca-word-input') as HTMLInputElement).value = "";
     (document.getElementById('nesca-word-output') as HTMLInputElement).value = "";

@@ -1,6 +1,4 @@
-import Nesca_Grammar_Stream from "../src/modules/nesca_grammar_stream";
-
-
+import Nesca_Grammar_Stream from "../src/modules/resolvers/nesca_grammar_stream";
 import { describe, it, expect } from 'vitest';
 import  Logger  from '../src/modules/logger'; // Assuming Logger is defined in src/logger
 import Escape_Mapper from '../src/modules/escape_mapper'; // Assuming Escape_Mapper is defined in src/escape_mapper

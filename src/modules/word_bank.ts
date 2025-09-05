@@ -2,6 +2,7 @@ import Word from './word';
 import Logger from './logger';
 
 import { final_sentence } from './utilities';
+import { Output_Mode } from './types';
 
 class Word_Bank {
     public logger: Logger;
@@ -10,11 +11,11 @@ class Word_Bank {
     private word_divider: string;
     private input_word_divider: string;
 
-    private debug: boolean;
-
     private num_of_rejects = 0;
     private num_of_transformed = 0;
     private num_of_passed = 0;
+
+    private output_mode: Output_Mode
 
     constructor(
         logger: Logger,
@@ -22,8 +23,7 @@ class Word_Bank {
         input_words: string,
         word_divider: string = "\n",
         input_word_divider: string = "\n",
-        debug: boolean,
-        apply_mode: string
+        output_mode: Output_Mode
     ) {
         this.logger = logger;
 
@@ -33,11 +33,12 @@ class Word_Bank {
         
         this.word_divider = word_divider;
         this.input_word_divider = input_word_divider;
-        this.debug = debug;
         
         this.words = [];
 
-        Word.apply_mode = apply_mode;
+        this.output_mode = output_mode;
+        Word.output_mode = output_mode;
+
 
         if (input_words == '') {
             this.logger.validation_error("No input words to transform");
@@ -56,7 +57,7 @@ class Word_Bank {
             const my_word = this.words[i];
             if (my_word.rejected) {
                 this.num_of_rejects ++;
-                if (this.debug) {
+                if (this.output_mode === 'debug') {
                     word_list.push(my_word.get_word());
                 }
             } else {
@@ -69,6 +70,7 @@ class Word_Bank {
             }
         }
         this.create_record();
+        if (this.output_mode === 'debug') {this.show_debug();}
         return word_list.join(this.word_divider);
     }
 
@@ -97,6 +99,15 @@ class Word_Bank {
             records.push(`${this.num_of_rejects} words rejected`);
         }
         this.logger.info(`${final_sentence(records)} -- in ${display}`);
+    }
+
+    show_debug(): void {
+        let info:string =
+            `~ CREATING TEXT ~\n` +
+            `\nNum of words: ` + this.words.length + 
+            `\nMode: ` + this.output_mode;
+
+        this.logger.diagnostic(info);
     }
 }
 

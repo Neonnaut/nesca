@@ -50,12 +50,23 @@ export type Token =
       max: number|typeof Infinity;
     }
   | {
-      type: "backreference";
+      type: "target-reference";
       base: string;
       min: number;
       max: number|typeof Infinity;
-  };
+    }
+    /*
+  | {
+      type: "named-reference";
+      base: string;
+      name: string;
+      mode: 'assertion'|'declaration'|'insertion';
+      min: number;
+      max: number|typeof Infinity;
+    }*/;
 
     export type Token_Stream_Mode = "TARGET" | "RESULT" | "BEFORE" | "AFTER";
 
-    export type Apply_Mode = "word-list" | "debug" | "old-to-new"
+    export type Output_Mode = "word-list" | "debug" | "old-to-new"
+
+    export type Distribution = "gusein-zade" | "zipfian" | "shallow" | "flat"

@@ -35,7 +35,7 @@
         <img src="img/nesca.svg" alt="Logo of astronaut" style="float: left;">
 
         <h1 style="margin-bottom: 10px;">Nesca<br>documentation</h1>
-        <b>Version 0.3.0</b>
+        <b>Version 0.3.3</b>
       </div>
       <br>
 
@@ -92,6 +92,10 @@
 
         <li><a href="#nescaFeatures">Features</a>
         <ol class="nice-list">
+          <li><a href="#nescaProFeature">Pro-feature</a></li>
+          <li><a href="#nescaAntiFeature">Anti-feature</a></li>
+          <li><a href="#nescaParaFeature">Para-feature</a></li>
+          <li><a href="#nescaFeatureInFeature">Referencing features inside features</a></li>
           <li><a href="#nescaUsingFeatures">Using features</a></li>
           <li><a href="#nescaFeatureField">Feature-field</a></li>
         </ol>
@@ -121,14 +125,14 @@
         <li><a href="#nescaAdvancedRules">Advanced rules</a>
           <ol class="nice-list">
             <li><a href="#nescaEngine">Engine</a></li>
-            <li><a href="#nescaBackreference">Backreference</a></li>
+            <li><a href="#nescaTarget-reference">Target-reference</a></li>
             <li><a href="#nescaMetathesisChange">Metathesis change</a></li>
         </ol>
         </li>
       </ol>
 
       <h2 id="nescaAbout"><a class="head-num">1</a>About Nesca</h2>
-      <p>This is the complete documentation for <a href="./nesca.html">Nesca version 0.3.0</a></p>
+      <p>This is the complete documentation for <a href="./nesca.html">Nesca version 0.3.3</a></p>
       <p>Nesca is a "sound change applier", it takes a set of transformation rules and applies them to words to simulate historical sound changes or under similar conditions. It also offers other word modification utilities including capitalisation and X-SAMPA to IPA. Nesca is an easy to use but powerful tool for conlangers and linguists.</p>
 
       <!--
@@ -190,7 +194,7 @@
             <td>Escapes a character after it</td>
           </tr>
           <tr>
-            <td><code class="example">@{</code> and <code class="example">}</code></td>
+            <td><code class="example">"{</code> and <code class="example">}</code></td>
             <td>Named escape</td>
           </tr>
           <tr>
@@ -198,7 +202,7 @@
             <td>Any one-length capital letter can refer to a <a href="#nescaCategories">category</a></td>
           </tr>
           <tr>
-            <td><code class="example">+</code> or <code class="example">-</code> or <code class="example">_</code>... </td>
+            <td><code class="example">+</code> or <code class="example">-</code> or <code class="example">&gt;</code>... </td>
             <td>A <a href="#nescaFeatures">feature</a></td>
           </tr>
           <tr>
@@ -232,8 +236,8 @@
             <td>Escapes a character after it</td>
           </tr>
           <tr>
-            <td><code class="example">@{</code> and <code class="example">}</code></td>
-            <td>Named escape, or a <a href="#nescaFeatures">feature</a> matrix</td>
+            <td><code class="example">"{</code> and <code class="example">}</code></td>
+            <td>Named escape</td>
           </tr>
           <tr>
             <td><code class="example">&gt;</code>, <code class="example">-&gt;</code>, <code class="example">=&gt;</code>, <code class="example">⇒</code> or <code class="example">→</code></td>
@@ -254,6 +258,10 @@
           <tr>
             <td><code class="example">C</code>, <code class="example">D</code>, <code class="example">K</code>, ...</td>
             <td>Any one-length capital letter can refer to a <a href="#nescaUsingCategories">category</a></td>
+          </tr>
+          <tr>
+            <td><code class="example">"{</code> and <code class="example">}</code></td>
+            <td>A <a href="#nescaUsingFeatures">feature-matrix</a></td>
           </tr>
           <tr>
             <td><code class="example">^</code> or <code class="example">∅</code></td>
@@ -313,7 +321,7 @@
           </tr>
           <tr>
             <td><code class="example">&lt;</code></td>
-            <td><a href="#nescaBackreference">Backreference</a></td>
+            <td><a href="#nescaTarget-reference">Target-reference</a></td>
           </tr>
           <tr>
             <td><code class="example">~</code></td>
@@ -324,7 +332,7 @@
 
 
       <h4 id="nescaNamedEscape"><a class="head-num">4.2.3</a>Named escape</h4>
-      <p>Named escapes, enclosed in <code class="example">@{</code> and <code class="example">}</code> allow space and combining diacritics to be used without needing to insert these characters.</p>
+      <p>Named escapes, enclosed in <code class="example">"{</code> and <code class="example">}</code> allow space and combining diacritics to be used without needing to insert these characters.</p>
 
       <p>The supported characters are:</p>
       <table class="styled-table">
@@ -475,7 +483,7 @@
       <div class="prog-pre"><span class="comment">; Merge /o/ and /a/ into x</span><br>  o<span class="link">,</span> a <span class="link">-></span> x<span class="link">,</span> x<br><span class="comment">; boda ==> bxdx</span></div>
 
       <h3 id="nescaReject"><a class="head-num">7.3</a>Reject</h3>
-      <p>To remove, or in other words, reject a word, you use the <code class="example">^REJECT</code> keyword in <code class="example">RESULT</code>:</p>
+      <p>To remove, or in other words, reject a word, use the <code class="example">^REJECT</code> keyword in <code class="example">RESULT</code>:</p>
       <div class="prog-pre">a<span class="link">,</span> bi <span class="link">-></span> <span class="operator">^REJECT</span></div>
       <p>In the above example, any word that contains <code class="example">a</code> or <code class="example">bi</code> will be rejected.</p>
       <p>A shorthand version to <code class="example">^REJECT</code> is <code class="example">^R</code></p>
@@ -544,29 +552,33 @@
       <div class="prog-pre">  <span class="catkey">B</span> <span class="link">=</span> x<span class="link">,</span> y<span class="link">,</span> z<br><span class="directive">BEGIN transform</span><span class="link">:</span><br>  <span class="regexp">[</span><span class="catkey">B</span><span class="regexp">]</span>v <span class="link">-></span> <span class="operator">^</span><br><code class="comment">; xvapay ==> apay</code></div>
 
       <h2 id="nescaFeatures"><a class="head-num">12</a>Features</h2>
-      <p>Let's say you had the grapheme, or rather, phoneme /i/ and wanted to capture it by its distinctive vowel features, <code class="example">+high</code> and <code class="example">+front</code>, and turn it into a phoneme marked with <code class="example">+high</code> and <code class="example">+back</code> features, perhaps /ɯ/. The <code class="example">features:</code> directive block lets you do this.</p>
-      <p>The key of all features must consist of lowercase letters a to z. These must be defined outside of the transform block.</p>
-      <p>A feature prepended with a plus sign <code class="example">+</code> is a 'pro-feature'. For example <code class="example">+voice</code>. We can define a set of graphemes that are marked by this feature by using this pro-feature. For example:</p>
+      <p>Let's say you had the grapheme, or rather, phoneme /i/ and wanted to capture it by its distinctive vowel features, <code class="example">+high</code> and <code class="example">+front</code>, and turn it into a phoneme marked with <code class="example">+high</code> and <code class="example">+back</code> features, perhaps /ɯ/. Features let you do this.</p>
+      <p>The key of all features must consist of lowercase letters a to z, uppercase letters a to z, <code class="example">.</code>, <code class="example">-</code> or <code class="example">+</code></p>
 
+      <h3 id="nescaProFeature"><a class="head-num">12.1</a>Pro-feature</h3>
+      <p>A feature prepended with a plus sign <code class="example">+</code> is a 'pro-feature'. For example <code class="example">+voice</code>. We can define a set of graphemes that are marked by this feature by using this pro-feature. For example:</p>
       <div class="prog-pre"><span class="catkey">+voice</span> <span class="link">=</span> b<span class="link">,</span> d<span class="link">,</span> g<span class="link">,</span> v<span class="link">,</span> z</div>
 
+      <h3 id="nescaAntiFeature"><a class="head-num">12.2</a>Anti-feature</h3>
       <p>A feature prepended with a minus sign <code class="example">-</code> is an 'anti-feature'. For example <code class="example">-voice</code>. We can define a set of graphemes that are marked by a lack of this feature by using this anti-feature. For example:</p>
-
       <div class="prog-pre"><span class="catkey">-voice</span> <span class="link">=</span> p<span class="link">,</span> t<span class="link">,</span> k<span class="link">,</span> f<span class="link">,</span> s</div>
 
-      <p>A feature prepended with an underscore <code class="example">_</code> is a 'para-feature'. A para-feature is simply a pro-feature where the graphemes marked as the anti-feature of this feature are the graphemes in the <code class="example">graphemes:</code> directive that are not not marked by this para-feature:</p>
-
-      <div class="prog-pre"><span class="directive">graphemes</span><span class="link">:</span> a<span class="link">,</span> b<span class="link">,</span> h<span class="link">,</span> i<span class="link">,</span> k<span class="link">,</span> n<span class="link">,</span> o<span class="link">,</span> t<br><span class="catkey">_voice</span> <span class="link">=</span> a<span class="link">,</span> i<span class="link">,</span> o</div>
-
+      <h3 id="nescaParaFeature"><a class="head-num">12.3</a>Para-feature</h3>
+      <p>A feature prepended with a greater-than-sign <code class="example">&gt;</code> is a 'para-feature'. A para-feature is simply a pro-feature where the graphemes marked as the anti-feature of this feature are the graphemes in the <code class="example">graphemes:</code> directive that are not not marked by this para-feature:</p>
+      <div class="prog-pre"><span class="directive">graphemes</span><span class="link">:</span> a<span class="link">,</span> b<span class="link">,</span> h<span class="link">,</span> i<span class="link">,</span> k<span class="link">,</span> n<span class="link">,</span> o<span class="link">,</span> t<br><span class="catkey">&gt;voice</span> <span class="link">=</span> a<span class="link">,</span> i<span class="link">,</span> o</div>
       <p>Is equivalent to the below example:</p>
-
       <div class="prog-pre"><span class="catkey">+vowel</span> <span class="link">=</span> a<span class="link">,</span> i<span class="link">,</span> o<br><span class="catkey">-vowel</span> <span class="link">=</span> b<span class="link">,</span> h<span class="link">,</span> k<span class="link">,</span> n<span class="link">,</span> t</div>
-
-      <p>You can reference features inside features.</p>
 
       <p>'Where does this leave graphemes that are not marked by either the pro-feature or the anti-feature of a feature?', you might ask. Such graphemes are <em>unmarked</em> by that feature.</p>
 
-      <h3 id="nescaUsingFeatures"><a class="head-num">12.1</a>Using Features</h3>
+      <h3 id="nescaFeatureInFeature"><a class="head-num">12.4</a>Referencing features inside features</h3>
+
+      <p>Features can be referenced inside features. For example:</p>
+      <div class="prog-pre"><span class="catkey">+vowel</span> <span class="link">=</span> a<span class="link">,</span> i<span class="link">,</span> o<br><span class="catkey">+non-yod</span> <span class="link">=</span> <span class="catkey">+vowel</span><span class="link">,</span> <span class="operator">^</span>i</div>
+
+      <p>Use a caret in front of a grapheme to ensure that that grapheme is not part of the pro/anti/para-feature. In the example above, the pro-feature '<code class="example">+non-yod</code>' is composed of the graphemes <code class="example">a</code> and <code class="example">o</code> -- the grapheme <code class="example">i</code> is not part of this pro-feature. Due to the recursive nature of nested features, this removed grapheme will be removed... aggressively. For example, If <code class="example">+non-yod</code> were to be referenced in a different feature, that feature would always not have <code class="example">i</code> as a grapheme.</p>
+
+      <h3 id="nescaUsingFeatures"><a class="head-num">12.5</a>Using Features</h3>
 
       <p>To capture graphemes that are marked by features in a transform, the features must be listed in a 'feature-matrix' surrounded by <code class="example">@{</code> and <code class="example">}</code>. The graphemes in a word must be marked by each pro-/anti-feature in the feature-matrix to be captured. For example if a feature-matrix <code class="example">@{+high, +back}</code> captures the graphemes: <code class="example">u, ɯ</code>, another feature-matrix <code class="example">@{+high, +back, -round}</code> would capture <code class="example">ɯ</code> only.</p>
       <p>The very simple example below is written to change all voiceless graphemes that have a voiced counterpart into their voiced counterparts:</p>
@@ -581,7 +593,7 @@
 
       <p>In this rule, in <code class="example">RESULT</code>, <code class="example">@{+voice}</code> has a symmetrical one-to-one change of graphemes from the graphemes in <code class="example">@{-voice}</code> in <code class="example">TARGET</code>, leading to a concurrent change. Let's quickly imagine a scenario where the only <code class="example">@{+voice}</code> grapheme was <code class="example">b</code>. The result will be a merging of all <code class="example">-voice</code> graphemes into <code class="example">b</code>: <code class="example">tamepfa ==&gt; bamebba</code>.</p>
 
-      <h3 id="nescaFeatureField"><a class="head-num">12.2</a>Feature-field</h3>
+      <h3 id="nescaFeatureField"><a class="head-num">12.6</a>Feature-field</h3>
       <p>Feature-fields allow graphemes to be easily marked by multiple features in table format.</p>
       <p>The feature-field begins with a <code class="example">+-</code> and a space. The graphemes being marked by the features are listed on the first row. The features are listed in the first column.</p>
       <p>For example:</p>
@@ -669,12 +681,12 @@ n mp <span class="link">+</span>  <span class="link">+</span>  nn <span class="l
       <div class="prog-pre"><span class="comment">; Change a sequence of 1 to 4 /o/s into /x/</span><br>  o<span class="regexp">+{</span><span class="link">,</span>4<span class="regexp">}</span> <span class="link">-></span> x
 <code class="comment">; tootooooo ==> txtx</code></div>
 
-      <p>And finally at the end of the list, <code class="example">,</code> represents all possible numbers larger than the number to the the left</p>
+      <p>And finally at the end of the list, <code class="example">,</code> represents all possible numbers larger than the number to the left</p>
         <div class="prog-pre"><span class="comment">; Change a sequence of 4 to as many as possible /o/s into /x/</span><br>  o<span class="regexp">+{</span>4<span class="regexp"><span class="link">,</span>}</span> <span class="link">-></span> x
 <code class="comment">; toootooooo ==> toootx</code></div>
 
       <h3 id="nescaGeminateMark"><a class="head-num">15.3</a>Geminate-mark</h3>
-      <p>Geminate-mark using colon <code class="example">:</code>, will match twice to the grapheme, or grapheme from a set or category, to the left of it. In other words, you can capture an item only when it is geminated using the geminate-mark:</p>
+      <p>Geminate-mark using colon <code class="example">:</code>, will match twice to the grapheme, or grapheme from a set or category, to the left of it.</p>
       <div class="prog-pre">  a<span class="regexp">:</span> <span class="link">-></span> o<br><code class="comment">; aaata => oata</code></div>
 
       <p>Unlike quantifier, a geminate mark can be used in <code class="example">RESULT</code>:</p>
@@ -682,7 +694,7 @@ n mp <span class="link">+</span>  <span class="link">+</span>  nn <span class="l
       <div class="prog-pre">  a <span class="link">-></span> a<span class="regexp">:</span><br><code class="comment">; tat => taat</code></div>
 
       <h3 id="nescaKleeneStar"><a class="head-num">15.4</a>Kleene-star</h3>
-      <p>Occasionally, you may want to match a grapheme whether it exists, there is one of it, or there is multiple of it consecutively, known as a "Kleene-star". There is <b>no</b> dedicated character for a Kleene star. Instead, you wrap the content followed by a quantifier, in an optionalator:</p>
+      <p>Occasionally, you may want to match a grapheme whether it exists, there is one of it, or there is multiple of it consecutively, known as a "Kleene-star". There is <b>no</b> dedicated character for a Kleene star. Instead, wrap the content followed by a quantifier, in an optionalator:</p>
       <div class="prog-pre">  u<span class="regexp">(</span>a<span class="regexp">+)</span> <span class="link">-></span> o<br><code class="comment">; ruaruaaaaa ==> roro</code></div>
 
       <h3 id="nescaWildcard"><a class="head-num">15.5</a>Wildcard</h3>
@@ -705,7 +717,7 @@ n mp <span class="link">+</span>  <span class="link">+</span>  nn <span class="l
       <h2 id="nescaAdvancedRules"><a class="head-num">16</a>Advanced rules</h2>
 
       <h3 id="nescaEngine"><a class="head-num">16.1</a>Engine</h3>
-      <p>The engine statement provides useful functions that you can call at any point in the transform block. You call these engines following a <code class="example">|</code> and a space on a new line. You can also call a list of these functions in one line. For example: <code class="example">| compose, capitalise</code></p>
+      <p>The engine statement provides useful functions that you can call at any point in the transform block. These engines are called following a <code class="example">|</code> and a space on a new line. You can also call a list of these functions in one line. For example: <code class="example">| compose, capitalise</code></p>
 
       <ul class="paragraphian">
         <li><code class="example">decompose</code> will break-down all characters in a word into their "<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/normalize#nfc">Unicode Normalization, Canonical Decomposition</a>" form. For example, <code class="example">ñ</code> as a singular unicode entity, \u00F1, will be broken-down into a sequence of two characters, \u006E + \u0303</li>
@@ -718,9 +730,9 @@ n mp <span class="link">+</span>  <span class="link">+</span>  nn <span class="l
         <li><code class="example">ipa_to_xsampa</code> will convert graphemes of a word written in IPA into X-SAMPA</li>
       </ul>
 
-      <h3 id="nescaBackreference"><a class="head-num">16.2</a>Backreference</h3>
-      <p>A backreference is a reference to the the captured <code class="example">TARGET</code> graphemes. It cannot be used in <code class="example">TARGET</code>. This uses the less-than symbol <code class="example">&lt;</code>.</p>
-      <p>Here are some examples where backreference is employed:</p>
+      <h3 id="nescaTarget-reference"><a class="head-num">16.2</a>Target-reference</h3>
+      <p>A target-reference is a reference to the captured <code class="example">TARGET</code> graphemes. It cannot be used in <code class="example">TARGET</code>. This uses the less-than symbol <code class="example">&lt;</code>.</p>
+      <p>Here are some examples where target-reference is employed:</p>
       <p><b>Full reduplication</b>:</p>
       <div class="prog-pre">  <span class="regexp">&</span> <span class="link">-></span> <span class="regexp">&lt;&lt;</span>
 <span class="comment">; malak ==&gt; malakmalak</span></div>

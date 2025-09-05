@@ -1,11 +1,11 @@
-import Word from './word';
+import Word from '../modules/word';
 import Logger from './logger';
 import { swap_first_last_items } from './utilities';
-import type { Token } from './types';
+import type { Token, Output_Mode } from './types';
 
 import { xsampa_to_ipa, ipa_to_xsampa } from './xsampa';
 
-type MatchResult = {
+type Match_Result = {
     start: number; // actual match start
     end: number;   // exclusive end index
     matched: string[]; // matched tokens
@@ -35,12 +35,12 @@ class Transformer {
             chance:(number|null),
             line_num:number
         }[],
-        debug: boolean
+        output_mode:Output_Mode
     ) {
         this.logger = logger;
         this.graphemes = graphemes;
         this.transforms = transforms;
-        this.debug = debug;
+        this.debug = (output_mode === 'debug');
     }
 
     graphemosis(input: string): string[] {
@@ -61,7 +61,6 @@ class Transformer {
                 i++;
             }
         }
-
         return tokens;
     }
 
@@ -121,7 +120,7 @@ class Transformer {
 
             if (my_result_token.type === "grapheme") {
                 replacement_stream.push(my_result_token.base);
-            } else if (my_result_token.type === "backreference") {
+            } else if (my_result_token.type === "target-reference") {
                 for (let k:number = 0; k <= target_stream.length; k++) {
                     replacement_stream.push(target_stream[k]);
                 }
@@ -130,13 +129,14 @@ class Transformer {
         return replacement_stream;
     }
 
+    // BEFORE and AFTER and TARGET use this
     match_pattern_at(
         stream: string[],
         pattern: Token[],
         start: number,
         max_end?: number,
         target_stream?: string[]
-    ): MatchResult | null {
+    ): Match_Result | null {
         let i = start;
         let j = 0;
         const matched: string[] = [];
@@ -147,12 +147,12 @@ class Transformer {
                 token.type !== 'grapheme' &&
                 token.type !== 'wildcard' &&
                 token.type !== 'anythings-mark' &&
-                token.type !== 'backreference'
+                token.type !== 'target-reference'
+                // token.type !== 'named-reference'
             ) {
                 j++;
                 continue;
             }
-
             const min = token.min;
             const max = token.max;
             const max_available = max_end !== undefined
@@ -167,32 +167,31 @@ class Transformer {
                 ) {
                     count++;
                 }
-
                 if (count < min) {;
                     return null;
                 }
 
                 matched.push(...stream.slice(i, i + count));
                 i += count;
-            } else if (token.type === 'backreference') {
+            } else if (token.type === 'target-reference') {
                 if (!target_stream || target_stream.length === 0) {
-                    this.logger.validation_error("Backreference requires a non-empty target_stream");
+                    this.logger.validation_error("Target-reference requires a non-empty target_stream");
                 }
 
                 const unit = target_stream;
-                const unitLength = unit.length;
+                const unit_length = unit.length;
                 const min = token.min;
                 const max = token.max;
 
                 const max_available = max_end !== undefined
-                    ? Math.min(max, Math.floor((max_end - i) / unitLength))
+                    ? Math.min(max, Math.floor((max_end - i) / unit_length))
                     : max;
 
                 let repetitions = 0;
 
                 while (
                     repetitions < max_available &&
-                    stream.slice(i + repetitions * unitLength, i + (repetitions + 1) * unitLength)
+                    stream.slice(i + repetitions * unit_length, i + (repetitions + 1) * unit_length)
                         .every((val, idx) => val === unit[idx])
                 ) {
                     repetitions++;
@@ -202,10 +201,18 @@ class Transformer {
                     return null;
                 }
 
-                const totalLength = repetitions * unitLength;
-                matched.push(...stream.slice(i, i + totalLength));
-                i += totalLength;
+                const total_length = repetitions * unit_length;
+                matched.push(...stream.slice(i, i + total_length));
+                i += total_length;
                 
+            /*    
+            } else if (token.type === "named-reference") {
+                if (token.mode === 'assertion') {
+                    console.log(get_last(matched))
+                } else if (token.mode === 'insertion') {
+                    matched.push(...stream.slice(i, i + 0));
+                }
+            */
             } else if (token.type === 'wildcard') {
                 const available = Math.min(max_available, stream.length - i);
 
@@ -219,14 +226,14 @@ class Transformer {
 
             else if (token.type === 'anythings-mark') {
                 const blocked = token.blocked_by ?? [];
-                const nextToken = pattern[j + 1];
+                const next_token = pattern[j + 1];
 
                 let count = 0;
                 while (
                     count < max_available &&
                     stream[i + count] !== undefined &&
                     !blocked.includes(stream[i + count]) &&
-                    !(nextToken?.type === 'grapheme' && stream[i + count] === nextToken.base)
+                    !(next_token?.type === 'grapheme' && stream[i + count] === next_token.base)
                 ) {
                     count++;
                 }
@@ -238,10 +245,8 @@ class Transformer {
                 matched.push(...stream.slice(i, i + count));
                 i += count;
             }
-
             j++;
         }
-
         return {
             start,
             end: i,
@@ -377,7 +382,7 @@ class Transformer {
         const normalized = result_tokens;
 
         // 🧾 Log transformation summary
-        if (applied_targets.length > 0 && this.debug) {
+        if (applied_targets.length > 0) {
             let my_exceptions = '';
             for (const e of exceptions) {
                 const my_before = e.before.map(t => t.base).join("");
@@ -400,7 +405,6 @@ class Transformer {
                 line_num
             );
         }
-
         return normalized;
     }
 
@@ -452,7 +456,7 @@ class Transformer {
             // NOW, Go through TARGET
             if (raw_target[0].type === "insertion") {
                 // INSERTION
-                if (mode === "deletion" || mode === "reject") {
+                if (mode === "deletion" || mode === "reject" || mode === "metathesis") {
                     this.logger.validation_error(`Deletion of ${mode} is not valid`, line_num);
                 }
                 if (conditions.length === 0) {
@@ -544,12 +548,10 @@ class Transformer {
                             replacement_stream:my_replacement_stream
                         });
                     }
-
                     cursor = global_index + match_length;
                 }
             }
         }
-
         word_stream = this.replacementa(
             word_stream,
             replacements,
@@ -560,7 +562,6 @@ class Transformer {
         )
         return word_stream;
     }
-
 
     do_transforms(
         word: Word,
@@ -588,11 +589,7 @@ class Transformer {
         }
 
         if (!word.rejected) {
-            if (this.debug) {
-                if (word.transformations.length > 1) {
-                    word.record_transformation(null, `${tokens.join("")}`);
-                }
-            } else {
+            if (word.transformations.length > 1) {
                 word.record_transformation(null, `${tokens.join("")}`);
             }
         }

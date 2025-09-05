@@ -1,17 +1,20 @@
 import Logger from './logger';
 
-import Resolver from './resolver';
 import Word_Bank from './word_bank'
 import Transformer from './transformer';
 import Escape_Mapper from './escape_mapper';
-import Transform_Resolver from './transform_resolver';
-import Nesca_Grammar_Stream from './nesca_grammar_stream';
-import type { Apply_Mode } from './types'
+import type { Output_Mode } from './types'
+
+import Parser from './parser';
+import CategoryResolver from './resolvers/category_resolver';
+import FeatureResolver from './resolvers/feature_resolver';
+import Nesca_Grammar_Stream from './resolvers/nesca_grammar_stream';
+import Transform_Resolver from './resolvers/transform_resolver'
 
 type apply_options = {
   file: string;
   input_words: string;
-  apply_mode?: Apply_Mode;
+  apply_mode?: Output_Mode;
   word_divider?: string;
 };
 
@@ -35,28 +38,31 @@ function apply({
 
         const escape_mapper = new Escape_Mapper();
 
-        const r = new Resolver( logger, escape_mapper, apply_mode, word_divider );
+        const p = new Parser(
+            logger, escape_mapper, apply_mode, word_divider
+        );
+        p.parse_file(file);
 
-        r.parse_file(file);
-        r.resolve_categories();
+        const category_resolver = new CategoryResolver(
+            logger, p.output_mode, escape_mapper, p.category_pending,);
 
-        r.resolve_features();
+        const feature_resolver = new FeatureResolver(
+            logger, p.output_mode, escape_mapper, p.feature_pending, p.graphemes);
 
         const nesca_grammar_stream = new Nesca_Grammar_Stream(
-            logger, r.graphemes, escape_mapper
-        );
-        const transform_resolver = new Transform_Resolver(
-            logger, nesca_grammar_stream, r.categories, r.transform_pending, r.features
-        )
-        r.set_transforms(transform_resolver.resolve_transforms());
+            logger, p.graphemes, escape_mapper);
 
-        if(r.debug) { r.create_record(); }
+        const transform_resolver = new Transform_Resolver(
+            logger, p.output_mode, nesca_grammar_stream, category_resolver.trans_categories,
+            p.transform_pending, feature_resolver.features);
+        
+        // Phew! done resolving things
 
         const transformer = new Transformer( logger,
-            r.graphemes, r.transforms, r.debug
+            p.graphemes, transform_resolver.transforms, p.output_mode
         );
 
-        const b = new Word_Bank(logger, build_start, input_words, r.word_divider, r.input_word_divider, r.debug, r.apply_mode);
+        const b = new Word_Bank(logger, build_start, input_words, p.word_divider, p.input_word_divider, p.output_mode);
 
         // Yo! this is where we change da words !!
         // Wow. Such change
